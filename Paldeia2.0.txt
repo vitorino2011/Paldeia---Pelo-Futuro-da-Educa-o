@@ -1,0 +1,3439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paldeia - Plataforma de Estudos</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css"
+      rel="stylesheet"
+    />
+    <!-- Favicon dinâmico será injetado aqui pelo JavaScript -->
+    <link id="dynamic-favicon" rel="icon" type="image/svg+xml" href="">
+    <style>
+      /* Configuração e classes customizadas do Tailwind */
+      :root {
+        --primary-color: #f97316; /* Cor padrão, laranja */
+        --secondary-color: #111827;
+        --mastered-color: #ffd700; /* Amarelo dourado para unidades concluídas */
+        --bg-dark: #000000; /* Fundo preto */
+        --bg-card: #2b3740;
+        --bg-panel: #2b3740;
+        --primary-color-rgb: 249, 115, 22;
+        --mastered-color-light: #FFE866; /* Cor mais clara para o brilho inicial de concluído */
+        
+        /* Cores por matéria - CORRIGIDAS */
+        --math-color: #EF4444; /* Vermelho */
+        --portuguese-color: #F97316; /* Laranja */
+        --geography-color: #EAB308; /* Amarelo */
+        --history-color: #A855F7; /* Roxo */
+        --art-color: #EC4899; /* Rosa */
+        --writing-color: #06B6D4; /* Ciano */
+      }
+
+      /* Reset básico e tipografia */
+      body {
+        font-family: 'Nunito', sans-serif;
+        background-color: var(--bg-dark); /* Fundo preto */
+        color: white;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden; /* Evita scroll horizontal */
+      }
+      
+      /* Bloqueia o scroll do body quando o modal ou overlay está ativo */
+      body.modal-open {
+          overflow: hidden;
+      }
+
+      /* Estilos para o contêiner principal */
+      .app-container {
+        display: flex;
+        min-height: 100vh;
+        /* Adicionado para que o conteúdo principal fique invisível até o preloader desaparecer */
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+      }
+
+      /* Estilos da barra lateral */
+      .sidebar {
+        width: 20rem; /* w-80 */
+        background-color: var(--bg-card);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-direction: column;
+        border-top-right-radius: 1.5rem;
+        border-bottom-right-radius: 1.5rem;
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 50;
+        overflow-y: auto;
+        transition: width 0.3s ease-in-out; /* Transição para o recolhimento */
+      }
+
+      .sidebar.collapsed {
+        width: 5rem; /* Largura para a sidebar recolhida */
+      }
+
+      .sidebar-logo {
+        padding: 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        overflow: hidden; /* Para esconder o texto da logo ao recolher */
+      }
+
+      .sidebar.collapsed .sidebar-logo h1 {
+        white-space: nowrap;
+        opacity: 0;
+        transform: translateX(-100%);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+      }
+
+      .sidebar-nav {
+        flex-grow: 1;
+        padding-top: 1.5rem;
+      }
+
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem 2rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+      }
+
+      .sidebar.collapsed .sidebar-item {
+        padding: 1rem 0; /* Padding menor para centralizar ícones */
+        justify-content: center; /* Centraliza ícones */
+      }
+
+      .sidebar-item:hover {
+        background-color: rgba(var(--primary-color-rgb), 0.1);
+        transform: translateX(0.25rem);
+      }
+
+      .sidebar.collapsed .sidebar-item:hover {
+        transform: none; /* Sem translação no hover quando recolhido */
+        background-color: rgba(var(--primary-color-rgb), 0.1); /* Mantém a cor de hover */
+      }
+
+      .sidebar-item.active {
+        background-color: rgba(var(--primary-color-rgb), 0.2);
+        border-right: 3px solid var(--primary-color);
+      }
+      
+      .sidebar.collapsed .sidebar-item.active {
+        border-right: none; /* Remove a borda direita quando recolhido */
+        border-bottom: 3px solid var(--primary-color); /* Adiciona borda inferior para indicar ativo */
+        border-radius: 0.5rem; /* Pequeno arredondamento para a borda inferior */
+      }
+
+      .sidebar-item-icon {
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+      }
+      
+      .sidebar.collapsed .sidebar-item-icon {
+        margin-right: 0; /* Remove margem do ícone quando recolhido */
+      }
+
+      .sidebar-item i {
+        color: var(--primary-color);
+      }
+
+      .sidebar-item span {
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        white-space: nowrap; /* Impede quebras de linha */
+        overflow: hidden; /* Esconde o texto que ultrapassa */
+      }
+
+      .sidebar.collapsed .sidebar-item span {
+        opacity: 0;
+        width: 0; /* Remove largura para esconder completamente */
+        transform: translateX(-100%); /* Desliza para fora */
+      }
+
+      .sidebar-toggle-button {
+        display: flex;
+        justify-content: center;
+        padding: 1rem 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .sidebar-toggle-button button {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 1.5rem;
+        transition: transform 0.3s ease, color 0.2s ease;
+      }
+
+      .sidebar-toggle-button button:hover {
+        color: white;
+      }
+
+      .sidebar.collapsed .sidebar-toggle-button button {
+        transform: rotate(180deg); /* Gira a seta quando recolhido */
+      }
+
+      /* Estilos para o wrapper de conteúdo principal */
+      .main-content-wrapper {
+        flex-grow: 1;
+        margin-left: 20rem; /* w-80 */
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* Controlado pelo scrollable-content-area */
+        transition: margin-left 0.3s ease-in-out; /* Transição para o recolhimento */
+      }
+
+      .main-content-wrapper.sidebar-collapsed {
+        margin-left: 5rem; /* Ajusta margem quando a sidebar está recolhida */
+      }
+
+      /* Estilos para a barra superior - Agora fixa */
+      .top-bar {
+        background-color: var(--bg-card);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom-left-radius: 1.5rem;
+        border-bottom-right-radius: 1.5rem;
+        z-index: 40;
+        position: fixed; /* Alterado para fixed */
+        top: 0;
+        left: 20rem; /* Posiciona após a sidebar fixa */
+        width: calc(100% - 20rem); /* Calcula a largura restante */
+        transition: left 0.3s ease-in-out, width 0.3s ease-in-out; /* Transição para o recolhimento */
+      }
+
+      .main-content-wrapper.sidebar-collapsed .top-bar {
+        left: 5rem;
+        width: calc(100% - 5rem);
+      }
+
+
+      /* Área de conteúdo principal scrollável com fundo animado */
+      .scrollable-content-area {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 2rem;
+        padding-top: 6rem; /* Adicionado padding-top para compensar o header fixo */
+        position: relative;
+        z-index: 10;
+        background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 20px 20px;
+        transition: transform 0.8s ease-in-out, filter 0.3s ease-in-out; /* Adicionado transição para filter */
+      }
+      
+      /* Classe para o efeito de blur */
+      .scrollable-content-area.blur-background {
+        filter: blur(5px); /* Efeito de desfoque */
+      }
+      
+      /* Layout e estilo da trilha de aprendizagem */
+      .lesson-path-container {
+        position: relative;
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: transform 0.8s ease-in-out;
+        will-change: transform;
+      }
+
+      /* Estado de perspectiva do fluxograma */
+      .lesson-path-container.perspective-view {
+        transform: perspective(1000px) rotateX(45deg) scale(0.8);
+      }
+
+      .lesson-path-unit {
+        position: relative;
+        z-index: 10; /* Garante que as unidades fiquem acima da linha da trilha */
+        margin: 3.5rem 0; /* Espaçamento entre as unidades */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 250px;
+        padding: 1rem 0;
+        transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        will-change: opacity, transform;
+      }
+      
+      /* Animação de entrada/foco da unidade */
+      .lesson-path-unit.active-unit {
+        animation: pulse-active 1s infinite alternate; /* Animação de pulso sutil */
+      }
+
+      @keyframes pulse-active {
+          from { transform: scale(1); opacity: 1; }
+          to { transform: scale(1.02); opacity: 0.95; }
+      }
+
+      /* Nova classe para unidades bloqueadas */
+      .lesson-path-unit.locked {
+          opacity: 0.4;
+          pointer-events: none; /* Desabilita interações de clique e hover */
+      }
+      
+      /* Container para o círculo da unidade e o anel de progresso */
+      .lesson-circle-container {
+        position: relative;
+        width: 8rem; /* Tamanho fixo para o elemento visual completo */
+        height: 8rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* Sombra inicial sutil para a borda base */
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+        transition: box-shadow 0.3s ease;
+      }
+
+      /* O anel de progresso - preenche com a cor */
+      .progress-circle {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: var(--progress-gradient, conic-gradient(transparent 0deg, transparent 360deg));
+        z-index: 1; /* Garante que fique atrás do círculo interno */
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3); /* Sombra interna para profundidade */
+      }
+
+      /* O círculo interno (conteúdo real da unidade) */
+      .lesson-circle {
+        position: relative;
+        width: 7.2rem; /* Ligeiramente menor para revelar o progress-circle como uma borda */
+        height: 7.2rem;
+        background-color: #4A5568; /* Fundo padrão do círculo interno */
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.3s ease, background-color 0.3s ease;
+        z-index: 2; /* Garante que fique acima do anel de progresso */
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); /* Sombra interna para o círculo */
+      }
+      
+      /* Apenas unidades não bloqueadas terão hover */
+      .lesson-path-unit:not(.locked) .lesson-circle-container:hover {
+          box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.3), 0 0 20px rgba(255, 255, 255, 0.5); /* Efeito de brilho aprimorado no hover */
+      }
+
+      .lesson-path-unit:not(.locked) .lesson-circle:hover {
+        transform: translateY(-0.3rem) scale(1.03); /* Efeito de elevação sutil no hover */
+      }
+      
+      .lesson-icon {
+        font-size: 3rem;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+      
+      /* Animação e estilo para unidade concluída */
+      .lesson-node.completed .lesson-circle-container {
+        box-shadow: 0 0 0 4px var(--mastered-color-light); /* Brilho base para unidades concluídas */
+      }
+
+      .lesson-node.completed .lesson-circle-container:hover {
+          box-shadow: 0 0 0 6px var(--mastered-color), 0 0 20px var(--mastered-color);
+      }
+
+      .lesson-node.completed .lesson-circle {
+        background: linear-gradient(45deg, var(--mastered-color), #C5B358); /* Gradiente dourado */
+        box-shadow: none; /* Remove a sombra interna, pois o gradiente já a cobre */
+      }
+      
+      .lesson-node.completed .lesson-icon {
+        color: var(--bg-card);
+      }
+
+      .lesson-node.completed .lesson-circle:hover {
+        transform: translateY(-0.5rem) scale(1.05) rotate(5deg);
+      }
+      
+      /* Estilo para o texto "Revisar" */
+      .lesson-revisar-text {
+          font-size: 0.875rem; /* text-sm */
+          color: var(--mastered-color);
+          font-weight: bold;
+          margin-top: 0.5rem;
+          opacity: 0; /* Começa invisível */
+          transform: translateY(10px); /* Deslocado para baixo */
+          animation: fade-in-up-revisar 0.5s forwards 0.3s; /* Atraso para aparecer após a unidade ficar dourada */
+      }
+
+      @keyframes fade-in-up-revisar {
+          to {
+              opacity: 1;
+              transform: translateY(0);
+          }
+      }
+
+      /* Linhas de conexão entre as unidades - V-shape */
+      .connection-canvas {
+        position: absolute;
+        z-index: 9;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+      }
+
+      /* Container do fluxograma expandido */
+      .expanded-flowchart-container {
+          position: absolute;
+          inset: 0;
+          /* Alterado para none para permitir eventos passarem, nós filhos irão capturá-los */
+          pointer-events: none; 
+          z-index: 10;
+          transition: opacity 0.5s ease-in-out;
+          opacity: 0;
+      }
+
+      .expanded-flowchart-container.active {
+          pointer-events: none; /* Manter none para o container */
+          opacity: 1;
+      }
+
+      .expanded-node {
+        position: absolute;
+        width: 5rem;
+        height: 5rem;
+        /* A cor será definida via JS para corresponder ao tema da unidade pai */
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 
+            inset 0 0 5px rgba(0, 0, 0, 0.5), 
+            0 5px 10px rgba(0, 0, 0, 0.3),
+            0 0 0 4px rgba(255, 255, 255, 0.1);
+        opacity: 0;
+        transform: scale(0);
+        animation: node-fade-in 0.5s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        pointer-events: auto; /* Apenas os nós individuais capturam eventos */
+      }
+
+      .expanded-node:hover {
+        transform: scale(1.1);
+        box-shadow: 
+            inset 0 0 5px rgba(0, 0, 0, 0.7), 
+            0 8px 15px rgba(0, 0, 0, 0.5),
+            0 0 0 6px rgba(255, 255, 255, 0.2);
+      }
+
+      .expanded-node-icon {
+        font-size: 2rem;
+        color: white;
+      }
+      
+      .expanded-line {
+          /* Removido completamente, pois as linhas não serão mais desenhadas */
+          display: none; 
+      }
+      
+      /* Tooltip sem moldura para as unidades expandidas */
+      .expanded-tooltip {
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          transform: translateX(-50%) translateY(0.5rem);
+          padding: 0.25rem 0.5rem;
+          color: white;
+          white-space: nowrap;
+          background: transparent;
+          text-shadow: 0 0 5px rgba(0,0,0,0.8);
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.3s ease-in-out;
+      }
+      
+      .expanded-node:hover .expanded-tooltip {
+          opacity: 1;
+      }
+
+      @keyframes node-fade-in {
+          to {
+              opacity: 1;
+              transform: scale(1);
+          }
+      }
+      
+      @keyframes line-fade-in {
+          from {
+              opacity: 0;
+          }
+          to {
+              opacity: 1;
+          }
+      }
+      
+      /* Linha principal entre as unidades (visual estático) */
+      /* Removido o estilo de .static-connection-line pois agora será uma única linha para toda a trilha */
+      
+      /* Nova classe para a linha contínua da trilha */
+      .main-path-line {
+        position: absolute;
+        width: 8px; /* Espessura da linha */
+        background-color: rgba(255, 255, 255, 0.2); /* Cor da linha */
+        left: 50%; /* Centraliza horizontalmente */
+        transform: translateX(-50%); /* Ajuste fino para centralização */
+        top: 0;
+        bottom: 0;
+        z-index: 5; /* Fica atrás das unidades */
+        border-radius: 4px; /* Cantos arredondados */
+      }
+
+      /* Estilos para o botão "Pular para a próxima seção" */
+      .next-section-button-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-top: 4rem; /* Espaçamento da última unidade */
+        opacity: 0; /* Começa invisível */
+        transition: opacity 0.5s ease-in-out;
+      }
+
+      .next-section-button-container.show {
+        opacity: 1;
+      }
+
+      .next-section-header {
+        background-color: var(--bg-card); /* Fundo similar ao topo */
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.5rem 1.5rem;
+        border-radius: 9999px; /* Pill shape */
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.875rem; /* text-sm */
+        margin-bottom: 1.5rem; /* Espaçamento abaixo do header */
+      }
+
+      .next-section-button {
+        background-color: var(--bg-card);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        color: var(--primary-color);
+        padding: 1.5rem 3rem;
+        border-radius: 1.5rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+        text-transform: uppercase;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      .next-section-button:hover {
+        background-color: rgba(var(--primary-color-rgb), 0.1);
+        border-color: var(--primary-color);
+        transform: translateY(-5px);
+      }
+
+      .next-section-description {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.125rem; /* text-lg */
+        margin-top: 1.5rem; /* Espaçamento acima da descrição */
+        max-width: 400px;
+      }
+
+
+      /* Modal */
+      .modal {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.75);
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+
+      .modal.show {
+        opacity: 1;
+        visibility: visible;
+      }
+      
+      .modal-content {
+        background-color: var(--bg-card);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        width: 90%; /* Ocupa mais espaço horizontal */
+        max-width: 800px; /* Limite maior */
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        position: relative;
+        transform: scale(0.9);
+        opacity: 0;
+        animation: modal-fade-in 0.3s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .modal.show .modal-content {
+        animation-play-state: running;
+      }
+      
+      .modal-close-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.6);
+        transition: color 0.2s ease;
+      }
+      
+      .modal-close-btn:hover {
+        color: white;
+      }
+      @keyframes modal-fade-in {
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .guide-modal-content {
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      /* Estilos para a área de exemplificação no guia */
+      .exemplification-area {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-left: 4px solid var(--primary-color);
+        padding: 1rem;
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+      .exemplification-area .icon-dynamic-color i {
+        font-size: 1.8rem;
+      }
+
+      .download-card-progress {
+        height: 0.5rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 9999px;
+        margin-top: 1rem;
+      }
+
+      .download-card-progress-bar {
+        height: 100%;
+        width: 0%;
+        background-color: var(--primary-color);
+        border-radius: 9999px;
+        transition: width 0.5s ease-in-out;
+      }
+
+      .course-dropdown-item {
+        border-left: 4px solid transparent;
+      }
+      
+      .course-dropdown-item.active {
+        background-color: rgba(var(--primary-color-rgb), 0.2);
+        border-left-color: var(--primary-color);
+      }
+
+      .subject-title-box {
+        background-color: var(--primary-color);
+      }
+
+      .icon-dynamic-color i {
+        color: var(--primary-color);
+      }
+
+      .text-dynamic-color {
+        color: var(--primary-color);
+      }
+
+      .hover-dynamic-color:hover {
+        background-color: rgba(var(--primary-color-rgb), 0.1);
+      }
+
+      /* Estilos para o preloader */
+      .preloader-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: #2E3743; /* Cor de fundo do preloader */
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column; /* Para alinhar spinner e texto verticalmente */
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+      .preloader-overlay.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .preloader-spin {
+        width: 50px; /* Tamanho menor para o spinner */
+        height: 50px; /* Tamanho menor para o spinner */
+        border: 5px solid rgba(255, 255, 255, 0.2);
+        border-top-color: #58CC02; /* Cor do spinner */
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem; /* Espaçamento entre spinner e texto */
+      }
+      
+      /* Spinner por matéria */
+      .preloader-spin.spinner-math {
+        border-top-color: var(--math-color);
+      }
+
+      .preloader-spin.spinner-portuguese {
+        border-top-color: var(--portuguese-color);
+      }
+
+      .preloader-spin.spinner-geography {
+        border-top-color: var(--geography-color);
+      }
+
+      .preloader-spin.spinner-history {
+        border-top-color: var(--history-color);
+      }
+
+      .preloader-spin.spinner-art {
+        border-top-color: var(--art-color);
+      }
+
+      .preloader-spin.spinner-writing {
+        border-top-color: var(--writing-color);
+      }
+      
+      /* Animação para sistemas com prefers-reduced-motion desativado */
+      @media (prefers-reduced-motion: no-preference) {
+          @keyframes spin {
+              to {
+                  transform: rotate(360deg);
+              }
+          }
+      }
+
+      /* Estilos para preloader com prefers-reduced-motion ativado */
+      @media (prefers-reduced-motion: reduce) {
+          .preloader-spin {
+              animation: none; /* Desativa a animação de rotação */
+              border-top-color: transparent; /* Torna o spinner estático e menos intrusivo */
+              border-radius: 4px; /* Transforma em barra */
+              width: 100px;
+              height: 10px;
+              background-color: #58CC02; /* Cor sólida para a barra */
+          }
+          .preloader-text-animated {
+            animation: none !important; /* Desativa qualquer animação de texto */
+            transform: none !important;
+          }
+      }
+
+      .preloader-text-animated {
+          font-size: 3rem; /* Texto menor */
+          white-space: nowrap; /* Garante que "Paldeia" fique em uma linha */
+      }
+
+      /* Removidas as animações de span para o preloader-text-animated span */
+      .preloader-text-animated span {
+        display: inline-block;
+        opacity: 1; /* Sempre visível */
+        transform: translateY(0); /* Nenhuma translação */
+        animation: none; /* Sem animação */
+      }
+      
+      /* Keyframes para aparecer de baixo para cima (agora não usados para o texto) */
+      @keyframes fade-in-up {
+        from {
+          opacity: 0;
+          transform: translateY(100%);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Keyframes para desaparecer de cima para baixo (agora não usados para o texto) */
+      @keyframes fade-out-down {
+        from {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(100%); /* Desce e desaparece */
+        }
+      }
+
+      /* Estilos para inputs dentro do modal */
+      .guide-input {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 2px solid transparent;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        color: white;
+        transition: border-color 0.2s ease;
+        /* Remove as setas para inputs numéricos */
+        -moz-appearance: textfield; /* Firefox */
+      }
+      /* Webkit browsers (Chrome, Safari) */
+      .guide-input::-webkit-outer-spin-button,
+      .guide-input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+      }
+
+      .guide-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+      }
+
+      /* Estilos para abas no modal do Guia */
+      .tab-header {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 1.5rem;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .tab-button {
+          padding: 0.75rem 1.5rem;
+          color: rgba(255, 255, 255, 0.7);
+          font-weight: bold;
+          border-bottom: 3px solid transparent;
+          transition: all 0.2s ease;
+          cursor: pointer;
+          flex-grow: 1;
+          text-align: center;
+      }
+
+      .tab-button:hover {
+          color: white;
+          background-color: rgba(255, 255, 255, 0.05);
+      }
+
+      .tab-button.active {
+          color: var(--primary-color);
+          border-bottom-color: var(--primary-color);
+          background-color: rgba(var(--primary-color-rgb), 0.1);
+      }
+
+      /* Estilos para área de anotações */
+      .notes-textarea {
+          width: 100%;
+          min-height: 150px;
+          background-color: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 0.5rem;
+          padding: 1rem;
+          color: white;
+          font-family: 'Nunito', sans-serif;
+          resize: vertical; /* Permite redimensionar verticalmente */
+      }
+
+      .notes-textarea:focus {
+          outline: none;
+          border-color: var(--primary-color);
+      }
+
+      /* Progress Checkbox dentro do guia */
+      .progress-checkbox-container {
+        display: flex;
+        align-items: center;
+        margin-top: 1rem;
+        gap: 0.5rem;
+      }
+
+      .progress-checkbox {
+        width: 1.25rem;
+        height: 1.25rem;
+        appearance: none;
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-radius: 0.25rem;
+        cursor: pointer;
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .progress-checkbox:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .progress-checkbox:checked::after {
+        content: '✔';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 0.8rem;
+        line-height: 1;
+      }
+
+      .progress-checkbox:focus {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
+
+      /* Offline Overlay Styles */
+      .offline-overlay {
+          position: fixed;
+          inset: 0;
+          background-color: rgba(0, 0, 0, 0.95);
+          z-index: 1000; /* High z-index to be on top */
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.5s ease, visibility 0.5s ease;
+          color: white; /* Ensure text is visible */
+      }
+
+      .offline-overlay.show {
+          opacity: 1;
+          visibility: visible;
+      }
+
+      .offline-message {
+          font-family: 'Pacifico', cursive;
+          font-size: 3rem;
+          color: #EF4444; /* Red-500 */
+          text-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+          animation: pulse-red 2s infinite alternate;
+      }
+
+      .offline-icon {
+          font-size: 5rem;
+          color: #EF4444;
+          animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both infinite;
+          transform: translate3d(0, 0, 0);
+          backface-visibility: hidden;
+          perspective: 1000px;
+          margin-bottom: 1rem;
+      }
+
+      @keyframes pulse-red {
+          from {
+              text-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+          }
+          to {
+              text-shadow: 0 0 20px rgba(239, 68, 68, 1), 0 0 30px rgba(239, 68, 68, 0.6);
+          }
+      }
+
+      @keyframes shake {
+          10%, 90% {
+              transform: translate3d(-1px, 0, 0);
+          }
+          20%, 80% {
+              transform: translate3d(2px, 0, 0);
+          }
+          30%, 50%, 70% {
+              transform: translate3d(-4px, 0, 0);
+          }
+          40%, 60% {
+              transform: translate3d(4px, 0, 0);
+          }
+      }
+
+      /* Estilos para a barra superior das seções */
+      .section-top-bar { 
+        background-color: var(--bg-card);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom-left-radius: 1.5rem;
+        border-bottom-right-radius: 1.5rem;
+        z-index: 35; /* Um pouco abaixo do main top-bar, mas acima do conteúdo */
+        position: sticky; /* Sticky para seguir o scroll da seção */
+        top: 0;
+        width: 100%;
+      }
+      
+      /* Estilos para o contêiner da pesquisa (ícone e input) */
+      .search-container {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end; /* Alinha o conteúdo à direita */
+          position: relative;
+          width: auto;
+          min-width: 48px; /* Espaço mínimo para o ícone */
+          height: 48px; /* Altura do ícone */
+          transition: all 0.3s ease-in-out; /* Transição suave para o container */
+      }
+
+      /* Estilos do input de pesquisa (escondido por padrão) */
+      .search-input {
+          background-color: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 0.75rem; /* rounded-xl */
+          padding: 0.75rem 1.25rem; /* py-3 px-5 */
+          color: white;
+          font-size: 1rem; /* text-base */
+          width: 0; /* Começa com largura zero (escondido) */
+          max-width: 300px; /* Limite de largura quando expandido */
+          transition: all 0.3s ease-in-out; /* Transição suave para largura e opacidade */
+          opacity: 0; /* Começa invisível */
+          margin-left: 0; /* Sem margem inicial */
+          pointer-events: none; /* Impede clique quando invisível */
+      }
+
+      /* Expansão do input e mudança de cor do ícone no hover do container pai */
+      .search-container:hover .search-input,
+      .search-container:focus-within .search-input { /* Para navegação por teclado */
+          opacity: 1; /* Torna visível */
+          width: 200px; /* Largura expandida (ajuste conforme necessário) */
+          margin-left: 1rem; /* Adiciona margem quando expandido */
+          padding: 0.75rem 1.25rem; /* Garante padding quando visível */
+          pointer-events: auto; /* Permite clique quando visível */
+      }
+
+      /* Mudança de cor do ícone da lupa no hover/focus do container pai */
+      .search-container:hover .ri-search-line,
+      .search-container:focus-within .ri-search-line {
+          color: white; /* Lupa fica branca no hover/focus */
+      }
+
+      /* Garante que o ícone tenha a cor dinâmica do tema */
+      .icon-dynamic-color i, .search-container .ri-search-line {
+        color: var(--primary-color);
+      }
+      
+      /* Estilo para :focus-visible para todos os elementos focáveis */
+      :focus-visible {
+          outline: 3px solid var(--primary-color); /* Contraste alto, borda 3px */
+          outline-offset: 2px; /* Espaçamento do elemento */
+          border-radius: 0.5rem; /* Levemente arredondado */
+      }
+
+      /* Esconde o outline para elementos que não devem ter (ex: o próprio body ao carregar) */
+      body:focus:not(:focus-visible) {
+          outline: none;
+      }
+      
+      /* Estilos para a página da biblioteca */
+      .library-book-card {
+        background-color: var(--bg-card);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      
+      .library-book-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+      }
+      
+      .library-book-cover {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+      
+      .library-book-info {
+        padding: 1rem;
+      }
+      
+      .library-book-title {
+        font-size: 1.125rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        color: white;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      
+      .library-book-author {
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 0.75rem;
+      }
+      
+      .library-book-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      
+      .library-book-actions {
+        display: flex;
+        justify-content: space-between;
+      }
+      
+      .library-book-button {
+        flex: 1;
+        padding: 0.5rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: 0.375rem;
+        color: white;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+      
+      .library-book-button:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+      
+      .library-book-button.favorite {
+        width: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 0.5rem;
+      }
+      
+      .library-book-button.favorite.active {
+        color: #FCD34D;
+      }
+      
+      /* Estilos para o carregamento infinito */
+      .library-loading {
+        display: flex;
+        justify-content: center;
+        padding: 2rem;
+      }
+      
+      .library-loading-spinner {
+        width: 2rem;
+        height: 2rem;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top-color: var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      .library-empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      
+      .library-empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      
+      /* Estilos para os filtros da biblioteca */
+      .library-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding: 0 1rem;
+      }
+      
+      .library-filter {
+        padding: 0.5rem 1rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: 9999px;
+        color: rgba(255, 255, 255, 0.8);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      
+      .library-filter:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+      
+      .library-filter.active {
+        background-color: var(--primary-color);
+        color: white;
+      }
+      
+      /* Estilos para o modal de detalhes do livro */
+      .book-detail-modal-content {
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      
+      .book-detail-cover {
+        width: 100%;
+        max-width: 200px;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+      }
+      
+      .book-detail-info h2 {
+        font-size: 1.875rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+      }
+      
+      .book-detail-info .author {
+        font-size: 1.25rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 1.5rem;
+      }
+      
+      .book-detail-meta {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .book-detail-meta-item {
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+      }
+      
+      .book-detail-meta-item .label {
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 0.25rem;
+      }
+      
+      .book-detail-meta-item .value {
+        font-weight: 600;
+      }
+      
+      .book-detail-section {
+        margin-bottom: 1.5rem;
+      }
+      
+      .book-detail-section h3 {
+        font-size: 1.25rem;
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+      }
+      
+      .book-detail-section h3 i {
+        margin-right: 0.5rem;
+      }
+      
+      .book-detail-categories {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      
+      .book-detail-category {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+      }
+      
+      .book-detail-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+      
+      .book-detail-action {
+        flex: 1;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        text-align: center;
+        transition: all 0.2s ease;
+      }
+      
+      .book-detail-action.favorite {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+      
+      .book-detail-action.favorite:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+      
+      .book-detail-action.favorite.active {
+        background-color: #FCD34D;
+        color: #1F2937;
+      }
+      
+      .book-detail-action.external {
+        background-color: var(--primary-color);
+        color: white;
+      }
+      
+      .book-detail-action.external:hover {
+        background-color: rgba(var(--primary-color-rgb), 0.8);
+      }
+      
+      .book-detail-action.download {
+        background-color: #10B981;
+        color: white;
+      }
+      
+      .book-detail-action.download:hover {
+        background-color: #059669;
+      }
+      
+      /* Estilos para a seção Minha Biblioteca */
+      .my-library-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.5rem;
+        padding: 1.5rem;
+      }
+      
+      .my-library-book-card {
+        background-color: var(--bg-card);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+      }
+      
+      .my-library-book-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+      }
+      
+      .my-library-book-cover {
+        width: 100%;
+        height: 240px;
+        object-fit: cover;
+      }
+      
+      .my-library-book-info {
+        padding: 1rem;
+      }
+      
+      .my-library-book-title {
+        font-weight: bold;
+        margin-bottom: 0.25rem;
+        color: white;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      
+      .my-library-book-author {
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.7);
+      }
+      
+      .my-library-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      
+      .my-library-empty i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      
+      /* Estilos para o modal offline simplificado */
+      .simple-offline-modal {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+      
+      .simple-offline-modal.show {
+        opacity: 1;
+        visibility: visible;
+      }
+      
+      .simple-offline-content {
+        background-color: var(--bg-card);
+        border-radius: 1rem;
+        padding: 2rem;
+        max-width: 500px;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      }
+      
+      .simple-offline-icon {
+        font-size: 3rem;
+        color: #EF4444;
+        margin-bottom: 1rem;
+      }
+      
+      .simple-offline-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+      }
+      
+      .simple-offline-message {
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 1.5rem;
+      }
+      
+      .simple-offline-button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+      
+      .simple-offline-button:hover {
+        background-color: rgba(var(--primary-color-rgb), 0.8);
+      }
+    </style>
+  </head>
+  <body class="bg-gray-900 text-white min-h-screen">
+    <!-- Link "Pular para o conteúdo" para acessibilidade -->
+    <a href="#main-content" class="sr-only focus:not-sr-only absolute top-0 left-0 bg-gray-800 text-white p-3 rounded-br-lg z-[1001]" aria-label="Pular para o conteúdo principal">Pular para o conteúdo principal</a>
+
+    <!-- Overlay do Preloader -->
+    <div id="preloader-overlay" class="preloader-overlay" role="status" aria-live="polite" aria-label="Carregando conteúdo, aguarde...">
+      <div id="preloader-container" class="flex flex-col items-center">
+        <div id="preloader-spinner" class="preloader-spin"></div>
+        <!-- O nome "Paldeia" aparece sem animação, fixo. -->
+        <div id="preloader-text" class="font-['Pacifico'] preloader-text-animated">Paldeia</div>
+        <p id="preloader-status-message" class="text-gray-400 mt-4 text-sm"></p>
+        <button id="preloader-cancel-btn" class="mt-4 px-4 py-2 bg-gray-700 text-white rounded-lg hidden" aria-label="Cancelar carregamento">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Modal Offline Simplificado -->
+    <div id="simple-offline-modal" class="simple-offline-modal" role="alertdialog" aria-modal="true" aria-labelledby="simple-offline-title" tabindex="-1">
+      <div class="simple-offline-content">
+        <i class="ri-wifi-off-line simple-offline-icon"></i>
+        <h2 id="simple-offline-title" class="simple-offline-title">Você está offline</h2>
+        <p class="simple-offline-message">Parece que você não tem conexão com a internet. Você ainda pode acessar seus livros salvos na seção "Minha Biblioteca".</p>
+        <button id="simple-offline-ok-btn" class="simple-offline-button">OK</button>
+      </div>
+    </div>
+
+    <!-- Overlay de Conexão Offline -->
+    <div id="offline-overlay" class="offline-overlay" role="alertdialog" aria-modal="true" aria-labelledby="offline-title" aria-describedby="offline-description" tabindex="-1">
+        <i class="ri-wifi-off-line offline-icon"></i>
+        <h2 id="offline-title" class="offline-message">Você está offline!</h2>
+        <p id="offline-description" class="text-gray-300 text-lg mt-4 text-center px-4">
+            A conexão com a internet foi perdida. Algumas funcionalidades podem estar limitadas.
+        </p>
+        <p class="text-gray-400 text-sm mt-2" id="offline-status-time" aria-live="polite">Perdido há 00:00:00</p>
+        
+        <div id="offline-cached-content-info" class="bg-gray-800 p-4 rounded-lg mt-6 hidden max-w-sm text-center">
+            <p class="text-yellow-300 font-bold">Conteúdo em cache disponível:</p>
+            <p class="text-sm text-gray-400" id="cached-content-list">Unidades de Matemática, Guia</p>
+            <p class="text-xs text-gray-500 mt-2" id="last-cached-timestamp">Última versão em cache: --/--/-- --:--</p>
+        </div>
+
+        <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mt-8 w-full max-w-md px-4">
+            <button id="reconnect-btn" class="bg-blue-600 text-white px-6 py-3 rounded-xl text-lg font-bold hover:bg-blue-700 transition-colors flex items-center justify-center shadow-md" aria-label="Tentar reconectar agora">
+                <i class="ri-refresh-line mr-2"></i> Tentar reconectar agora
+            </button>
+            <button id="continue-offline-btn" class="bg-gray-700 text-white px-6 py-3 rounded-xl text-lg font-bold hover:bg-gray-600 transition-colors flex items-center justify-center shadow-md" aria-label="Continuar em modo offline" disabled>
+                <i class="ri-cloud-off-line mr-2"></i> Continuar em modo offline
+            </button>
+            <button id="exit-offline-btn" class="bg-red-600 text-white px-6 py-3 rounded-xl text-lg font-bold hover:bg-red-700 transition-colors flex items-center justify-center shadow-md" aria-label="Sair do aplicativo">
+                <i class="ri-door-line mr-2"></i> Sair
+            </button>
+        </div>
+        <p id="reconnect-attempt-message" class="text-gray-400 mt-4 text-sm" aria-live="polite"></p>
+        
+        <!-- Fallback textual para JS desabilitado -->
+        <noscript>
+            <div class="absolute inset-0 bg-red-900 bg-opacity-90 flex items-center justify-center p-8 text-center" role="alert">
+                <p class="text-white text-2xl">
+                    Parece que o JavaScript está desabilitado no seu navegador. Você está sem conexão com a internet.
+                    Por favor, verifique suas configurações de rede e habilite o JavaScript para usar todas as funcionalidades.
+                </p>
+            </div>
+        </noscript>
+    </div>
+    
+    <div class="app-container">
+      <!-- Sidebar - Agora com cantos arredondados no topo e no rodapé -->
+      <div class="sidebar" id="sidebar">
+        <!-- Logo sem o ícone do "P", apenas o texto "Paldeia" -->
+        <div class="sidebar-logo">
+          <h1 class="text-3xl font-['Pacifico'] text-white cursor-pointer" id="logo-button" tabindex="0" role="link" aria-label="Voltar para a página inicial Paldeia">Paldeia</h1>
+        </div>
+        <!-- Navegação da Sidebar -->
+        <nav class="sidebar-nav" role="navigation" aria-label="Navegação Principal">
+          <div id="nav-learn" class="sidebar-item active" tabindex="0" role="link" aria-label="Aprender: Início da trilha de aprendizagem">
+            <div class="sidebar-item-icon">
+              <i class="ri-home-4-line text-2xl"></i>
+            </div>
+            <span class="font-bold text-lg">APRENDER</span>
+          </div>
+          <div id="nav-practice" class="sidebar-item" tabindex="0" role="link" aria-label="Banco de Questões: Acesse exercícios e atividades">
+            <div class="sidebar-item-icon">
+              <i class="ri-database-2-line text-2xl"></i>
+            </div>
+            <span class="font-bold text-lg">BANCO DE QUESTÕES</span>
+          </div>
+          <div id="nav-library" class="sidebar-item" tabindex="0" role="link" aria-label="Biblioteca: Acesse livros e materiais de estudo">
+            <div class="sidebar-item-icon">
+              <i class="ri-book-open-line text-2xl"></i>
+            </div>
+            <span class="font-bold text-lg">BIBLIOTECA</span>
+          </div>
+          <div id="nav-video" class="sidebar-item" tabindex="0" role="link" aria-label="Vídeo Aula: Acesse aulas gravadas">
+            <div class="sidebar-item-icon">
+              <i class="ri-video-line text-2xl"></i>
+            </div>
+            <span class="font-bold text-lg">VÍDEO AULA</span>
+          </div>
+          <div id="nav-news" class="sidebar-item" tabindex="0" role="link" aria-label="Notícias: Acesse as últimas novidades">
+            <div class="sidebar-item-icon">
+              <i class="ri-newspaper-line text-2xl"></i>
+            </div>
+            <span class="font-bold text-lg">NOTÍCIAS</span>
+          </div>
+          <div id="nav-my-library" class="sidebar-item" tabindex="0" role="link" aria-label="Minha Biblioteca: Acesse seus livros favoritos">
+            <div class="sidebar-item-icon">
+              <i class="ri-bookmark-line text-2xl"></i>
+            </div>
+            <span class="font-bold text-lg">MINHA BIBLIOTECA</span>
+          </div>
+          <div id="nav-agent" class="sidebar-item" tabindex="0" role="link" aria-label="Agente: Assistente de IA">
+            <div class="sidebar-item-icon">
+              <i class="ri-robot-line text-2xl"></i>
+            </div>
+            <span class="font-bold text-lg">AGENTE</span>
+          </div>
+          <div id="nav-settings" class="sidebar-item" tabindex="0" role="link" aria-label="Configurações: Ajuste suas preferências">
+            <div class="sidebar-item-icon">
+              <i class="ri-settings-3-line text-2xl"></i>
+            </div>
+            <span class="font-bold text-lg">CONFIGURAÇÕES</span>
+          </div>
+        </nav>
+        <!-- Botão para recolher/expandir sidebar -->
+        <div class="sidebar-toggle-button">
+          <button id="sidebar-toggle-btn" aria-label="Recolher/Expandir Painel Lateral" tabindex="0">
+            <i class="ri-arrow-left-s-line"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Conteúdo Principal -->
+      <div class="main-content-wrapper" id="main-content-wrapper">
+        <!-- Barra Superior -->
+        <div class="top-bar">
+          <div class="flex items-center space-x-6">
+            <div id="current-subject-title-box" class="subject-title-box text-white px-5 py-3 rounded-xl font-bold">
+              <span id="current-unit-text" class="text-lg">SEÇÃO 1, UNIDADE 1</span>
+            </div>
+            <h2 class="text-2xl font-bold text-white" id="current-chapter-title">Operações Básicas</h2>
+            <button id="openGuideModalBtn" class="bg-gray-700 text-white px-4 py-3 rounded-xl text-lg font-bold flex items-center hover:bg-gray-600 transition-colors" tabindex="0" aria-label="Abrir guia da unidade atual">
+              <div class="w-5 h-5 flex items-center justify-center mr-2 icon-dynamic-color">
+                <i class="ri-book-open-line"></i>
+              </div>
+              GUIA
+            </button>
+          </div>
+          <div class="flex items-center space-x-4">
+            <div class="relative">
+              <button id="courseDropdownBtn" class="bg-gray-700 text-white px-5 py-3 rounded-xl flex items-center justify-between text-lg font-bold hover:bg-gray-600 transition-colors" tabindex="0" aria-haspopup="true" aria-expanded="false" aria-controls="courseDropdown" aria-label="Matérias: Selecione uma matéria">
+                <span class="font-bold">MATÉRIAS</span>
+                <i class="ri-arrow-down-s-line ml-2 icon-dynamic-color"></i>
+              </button>
+              <div id="courseDropdown" class="hidden absolute right-0 mt-2 w-56 bg-gray-800 rounded-xl shadow-lg overflow-hidden z-50" role="menu" aria-orientation="vertical">
+                <div class="p-3 space-y-2">
+                  <button data-subject="matematica" class="course-option course-dropdown-item w-full px-4 py-3 rounded-xl flex items-center space-x-4 hover:bg-gray-700 transition-colors" tabindex="-1" role="menuitem" aria-label="Selecionar curso de Matemática">
+                    <div class="w-10 h-10 flex items-center justify-center icon-dynamic-color">
+                      <i class="ri-calculator-line text-2xl"></i>
+                    </div>
+                    <span class="text-xl text-white">Matemática</span>
+                  </button>
+                  <button data-subject="portugues" class="course-option course-dropdown-item w-full px-4 py-3 rounded-xl flex items-center space-x-4 hover:bg-gray-700 transition-colors" tabindex="-1" role="menuitem" aria-label="Selecionar curso de Português">
+                    <div class="w-10 h-10 flex items-center justify-center icon-dynamic-color">
+                      <i class="ri-book-line text-2xl"></i>
+                    </div>
+                    <span class="text-xl text-white">Português</span>
+                  </button>
+                  <button data-subject="geografia" class="course-option course-dropdown-item w-full px-4 py-3 rounded-xl flex items-center space-x-4 hover:bg-gray-700 transition-colors" tabindex="-1" role="menuitem" aria-label="Selecionar curso de Geografia">
+                    <div class="w-10 h-10 flex items-center justify-center icon-dynamic-color">
+                      <i class="ri-map-line text-2xl"></i>
+                    </div>
+                    <span class="text-xl text-white">Geografia</span>
+                  </button>
+                  <button data-subject="historia" class="course-option course-dropdown-item w-full px-4 py-3 rounded-xl flex items-center space-x-4 hover:bg-gray-700 transition-colors" tabindex="-1" role="menuitem" aria-label="Selecionar curso de História">
+                    <div class="w-10 h-10 flex items-center justify-center icon-dynamic-color">
+                      <i class="ri-ancient-gate-line text-2xl"></i>
+                    </div>
+                    <span class="text-xl text-white">História</span>
+                  </button>
+                  <button data-subject="artes" class="course-option course-dropdown-item w-full px-4 py-3 rounded-xl flex items-center space-x-4 hover:bg-gray-700 transition-colors" tabindex="-1" role="menuitem" aria-label="Selecionar curso de Artes">
+                    <div class="w-10 h-10 flex items-center justify-center icon-dynamic-color">
+                      <i class="ri-palette-line text-2xl"></i>
+                    </div>
+                    <span class="text-xl text-white">Artes</span>
+                  </button>
+                  <button data-subject="redacao" class="course-option course-dropdown-item w-full px-4 py-3 rounded-xl flex items-center space-x-4 hover:bg-gray-700 transition-colors" tabindex="-1" role="menuitem" aria-label="Selecionar curso de Redação">
+                    <div class="w-10 h-10 flex items-center justify-center icon-dynamic-color">
+                      <i class="ri-quill-pen-line text-2xl"></i>
+                    </div>
+                    <span class="text-xl text-white">Redação</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="bg-gray-700 p-2 rounded-full">
+              <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
+                <i class="ri-user-3-line text-2xl text-white"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Área de conteúdo principal scrollável -->
+        <div id="scrollable-content-area" class="scrollable-content-area" role="main" aria-live="polite">
+          <div id="main-content" class="h-full">
+            <!-- Conteúdo da página APRENDER -->
+            <div id="page-learn" class="tab-content active h-full">
+              <!-- Header Secundário para APRENDER -->
+              <div class="section-top-bar">
+                  <!-- Não há botão de "Voltar à Trilha" na própria trilha -->
+                  <h2 class="text-2xl font-bold text-white">APRENDER</h2>
+                  <div></div> <!-- Espaçador para manter o justify-between -->
+              </div>
+              <div id="lesson-path-container" class="lesson-path-container">
+                <!-- Linha contínua da trilha principal -->
+                <div class="main-path-line"></div>
+                
+                <!-- Unidades da trilha de aprendizagem -->
+                <div class="lesson-path-unit" data-unit="1">
+                  <div class="lesson-node">
+                    <div class="lesson-circle-container">
+                      <div class="progress-circle"></div>
+                      <div class="lesson-circle">
+                        <i class="ri-add-line lesson-icon"></i>
+                      </div>
+                    </div>
+                    <div class="lesson-title text-center mt-3 font-bold">Introdução</div>
+                  </div>
+                </div>
+                
+                <div class="lesson-path-unit" data-unit="2">
+                  <div class="lesson-node">
+                    <div class="lesson-circle-container">
+                      <div class="progress-circle"></div>
+                      <div class="lesson-circle">
+                        <i class="ri-number-1 lesson-icon"></i>
+                      </div>
+                    </div>
+                    <div class="lesson-title text-center mt-3 font-bold">Adição</div>
+                  </div>
+                </div>
+                
+                <div class="lesson-path-unit" data-unit="3">
+                  <div class="lesson-node">
+                    <div class="lesson-circle-container">
+                      <div class="progress-circle"></div>
+                      <div class="lesson-circle">
+                        <i class="ri-number-2 lesson-icon"></i>
+                      </div>
+                    </div>
+                    <div class="lesson-title text-center mt-3 font-bold">Subtração</div>
+                  </div>
+                </div>
+                
+                <div class="lesson-path-unit" data-unit="4">
+                  <div class="lesson-node">
+                    <div class="lesson-circle-container">
+                      <div class="progress-circle"></div>
+                      <div class="lesson-circle">
+                        <i class="ri-number-3 lesson-icon"></i>
+                      </div>
+                    </div>
+                    <div class="lesson-title text-center mt-3 font-bold">Multiplicação</div>
+                  </div>
+                </div>
+                
+                <div class="lesson-path-unit" data-unit="5">
+                  <div class="lesson-node">
+                    <div class="lesson-circle-container">
+                      <div class="progress-circle"></div>
+                      <div class="lesson-circle">
+                        <i class="ri-number-4 lesson-icon"></i>
+                      </div>
+                    </div>
+                    <div class="lesson-title text-center mt-3 font-bold">Divisão</div>
+                  </div>
+                </div>
+                
+                <!-- Botão para pular para a próxima seção -->
+                <div class="next-section-button-container">
+                  <div class="next-section-header">PRÓXIMA SEÇÃO</div>
+                  <button class="next-section-button">
+                    OPERAÇÕES COMPLEXAS
+                  </button>
+                  <p class="next-section-description">
+                    Avance para a próxima seção quando estiver confortável com os conceitos básicos.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Conteúdo da página BANCO DE QUESTÕES -->
+            <div id="page-practice" class="tab-content h-full hidden">
+              <div class="section-top-bar">
+                <button id="back-to-learn-practice" class="bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center hover:bg-gray-600 transition-colors" tabindex="0" aria-label="Voltar para a trilha de aprendizagem">
+                  <i class="ri-arrow-left-line mr-2"></i> Voltar à Trilha
+                </button>
+                <h2 class="text-2xl font-bold text-white">BANCO DE QUESTÕES</h2>
+                <div></div> <!-- Espaçador para manter o justify-between -->
+              </div>
+              <div class="flex flex-col items-center justify-center h-full">
+                <div class="text-center max-w-2xl">
+                  <i class="ri-database-2-line text-6xl text-gray-500 mb-6"></i>
+                  <h3 class="text-3xl font-bold text-white mb-4">Banco de Questões</h3>
+                  <p class="text-xl text-gray-300 mb-8">Acesse exercícios e atividades para praticar seus conhecimentos.</p>
+                  <div class="bg-gray-800 p-8 rounded-xl">
+                    <p class="text-gray-400">Em desenvolvimento. Será lançado em breve.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Conteúdo da página BIBLIOTECA -->
+            <div id="page-library" class="tab-content h-full hidden">
+              <div class="section-top-bar">
+                <button id="back-to-learn-library" class="bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center hover:bg-gray-600 transition-colors" tabindex="0" aria-label="Voltar para a trilha de aprendizagem">
+                  <i class="ri-arrow-left-line mr-2"></i> Voltar à Trilha
+                </button>
+                <h2 class="text-2xl font-bold text-white">BIBLIOTECA</h2>
+                <div class="search-container">
+                  <i class="ri-search-line text-2xl cursor-pointer"></i>
+                  <input type="text" class="search-input" placeholder="Buscar livros..." aria-label="Buscar livros na biblioteca">
+                </div>
+              </div>
+              
+              <div class="p-4">
+                <!-- Filtros da biblioteca -->
+                <div class="library-filters">
+                  <button class="library-filter active" data-filter="all">Todos</button>
+                  <button class="library-filter" data-filter="matematica">Matemática</button>
+                  <button class="library-filter" data-filter="portugues">Português</button>
+                  <button class="library-filter" data-filter="historia">História</button>
+                  <button class="library-filter" data-filter="geografia">Geografia</button>
+                  <button class="library-filter" data-filter="ciencias">Ciências</button>
+                  <button class="library-filter" data-filter="artes">Artes</button>
+                </div>
+                
+                <!-- Grade de livros -->
+                <div id="library-books-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  <!-- Os livros serão carregados dinamicamente aqui -->
+                </div>
+                
+                <!-- Indicador de carregamento -->
+                <div id="library-loading" class="library-loading hidden">
+                  <div class="library-loading-spinner"></div>
+                </div>
+                
+                <!-- Estado vazio -->
+                <div id="library-empty-state" class="library-empty-state hidden">
+                  <i class="ri-book-open-line"></i>
+                  <h3 class="text-xl font-bold text-white mt-2">Nenhum livro encontrado</h3>
+                  <p class="text-gray-400 mt-1">Tente ajustar sua busca ou filtros.</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Conteúdo da página VÍDEO AULA -->
+            <div id="page-video" class="tab-content h-full hidden">
+              <div class="section-top-bar">
+                <button id="back-to-learn-video" class="bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center hover:bg-gray-600 transition-colors" tabindex="0" aria-label="Voltar para a trilha de aprendizagem">
+                  <i class="ri-arrow-left-line mr-2"></i> Voltar à Trilha
+                </button>
+                <h2 class="text-2xl font-bold text-white">VÍDEO AULA</h2>
+                <div></div> <!-- Espaçador para manter o justify-between -->
+              </div>
+              <div class="flex flex-col items-center justify-center h-full">
+                <div class="text-center max-w-2xl">
+                  <i class="ri-video-line text-6xl text-gray-500 mb-6"></i>
+                  <h3 class="text-3xl font-bold text-white mb-4">Vídeo Aula</h3>
+                  <p class="text-xl text-gray-300 mb-8">Acesse aulas gravadas para complementar seus estudos.</p>
+                  <div class="bg-gray-800 p-8 rounded-xl">
+                    <p class="text-gray-400">Em desenvolvimento. Será lançado em breve.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Conteúdo da página NOTÍCIAS -->
+            <div id="page-news" class="tab-content h-full hidden">
+              <div class="section-top-bar">
+                <button id="back-to-learn-news" class="bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center hover:bg-gray-600 transition-colors" tabindex="0" aria-label="Voltar para a trilha de aprendizagem">
+                  <i class="ri-arrow-left-line mr-2"></i> Voltar à Trilha
+                </button>
+                <h2 class="text-2xl font-bold text-white">NOTÍCIAS</h2>
+                <div></div> <!-- Espaçador para manter o justify-between -->
+              </div>
+              <div class="flex flex-col items-center justify-center h-full">
+                <div class="text-center max-w-2xl">
+                  <i class="ri-newspaper-line text-6xl text-gray-500 mb-6"></i>
+                  <h3 class="text-3xl font-bold text-white mb-4">Notícias</h3>
+                  <p class="text-xl text-gray-300 mb-8">Acesse as últimas novidades sobre educação e aprendizagem.</p>
+                  <div class="bg-gray-800 p-8 rounded-xl">
+                    <p class="text-gray-400">Em desenvolvimento. Será lançado em breve.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Conteúdo da página MINHA BIBLIOTECA -->
+            <div id="page-my-library" class="tab-content h-full hidden">
+              <div class="section-top-bar">
+                <button id="back-to-learn-my-library" class="bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center hover:bg-gray-600 transition-colors" tabindex="0" aria-label="Voltar para a trilha de aprendizagem">
+                  <i class="ri-arrow-left-line mr-2"></i> Voltar à Trilha
+                </button>
+                <h2 class="text-2xl font-bold text-white">MINHA BIBLIOTECA</h2>
+                <div></div> <!-- Espaçador para manter o justify-between -->
+              </div>
+              
+              <div id="my-library-content" class="h-full">
+                <!-- Conteúdo será carregado dinamicamente -->
+              </div>
+            </div>
+            
+            <!-- Conteúdo da página AGENTE -->
+            <div id="page-agent" class="tab-content h-full hidden">
+              <div class="section-top-bar">
+                <button id="back-to-learn-agent" class="bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center hover:bg-gray-600 transition-colors" tabindex="0" aria-label="Voltar para a trilha de aprendizagem">
+                  <i class="ri-arrow-left-line mr-2"></i> Voltar à Trilha
+                </button>
+                <h2 class="text-2xl font-bold text-white">AGENTE</h2>
+                <div></div> <!-- Espaçador para manter o justify-between -->
+              </div>
+              <div class="flex flex-col items-center justify-center h-full">
+                <div class="text-center max-w-2xl">
+                  <i class="ri-robot-line text-6xl text-gray-500 mb-6"></i>
+                  <h3 class="text-3xl font-bold text-white mb-4">Assistente de IA</h3>
+                  <p class="text-xl text-gray-300 mb-8">Converse com nosso assistente de inteligência artificial para tirar dúvidas e receber orientações personalizadas.</p>
+                  <div class="bg-gray-800 p-8 rounded-xl">
+                    <p class="text-gray-400">Em desenvolvimento. Será lançado em breve.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Conteúdo da página CONFIGURAÇÕES -->
+            <div id="page-settings" class="tab-content h-full hidden">
+              <div class="section-top-bar">
+                <button id="back-to-learn-settings" class="bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center hover:bg-gray-600 transition-colors" tabindex="0" aria-label="Voltar para a trilha de aprendizagem">
+                  <i class="ri-arrow-left-line mr-2"></i> Voltar à Trilha
+                </button>
+                <h2 class="text-2xl font-bold text-white">CONFIGURAÇÕES</h2>
+                <div></div> <!-- Espaçador para manter o justify-between -->
+              </div>
+              <div class="flex flex-col items-center justify-center h-full">
+                <div class="text-center max-w-2xl">
+                  <i class="ri-settings-3-line text-6xl text-gray-500 mb-6"></i>
+                  <h3 class="text-3xl font-bold text-white mb-4">Configurações</h3>
+                  <p class="text-xl text-gray-300 mb-8">Ajuste suas preferências de uso e personalização.</p>
+                  <div class="bg-gray-800 p-8 rounded-xl">
+                    <p class="text-gray-400">Em desenvolvimento. Será lançado em breve.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal do Guia -->
+    <div id="guide-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+      <div class="modal-content">
+        <button class="modal-close-btn" aria-label="Fechar guia">
+          <i class="ri-close-line"></i>
+        </button>
+        
+        <div class="guide-modal-content">
+          <h2 id="guide-title" class="text-2xl font-bold text-white mb-6">Guia de Estudos</h2>
+          
+          <!-- Abas do Guia -->
+          <div class="tab-header">
+            <button class="tab-button active" data-tab="overview">Visão Geral</button>
+            <button class="tab-button" data-tab="examples">Exemplos</button>
+            <button class="tab-button" data-tab="exercises">Exercícios</button>
+            <button class="tab-button" data-tab="notes">Anotações</button>
+          </div>
+          
+          <!-- Conteúdo das Abas -->
+          <div id="tab-overview" class="tab-content active">
+            <h3 class="text-xl font-bold text-white mb-4">Visão Geral</h3>
+            <p class="text-gray-300 mb-4">Nesta unidade, você aprenderá conceitos fundamentais que são essenciais para o desenvolvimento do raciocínio lógico e resolução de problemas.</p>
+            <div class="bg-gray-800 p-4 rounded-lg mb-4">
+              <h4 class="text-lg font-bold text-white mb-2">Objetivos de Aprendizagem</h4>
+              <ul class="list-disc list-inside text-gray-300 space-y-1">
+                <li>Compreender os conceitos básicos da unidade</li>
+                <li>Aplicar fórmulas e métodos adequados</li>
+                <li>Resolver problemas do dia a dia usando conceitos aprendidos</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div id="tab-examples" class="tab-content hidden">
+            <h3 class="text-xl font-bold text-white mb-4">Exemplos Práticos</h3>
+            <div class="exemplification-area">
+              <div class="icon-dynamic-color">
+                <i class="ri-calculator-line"></i>
+              </div>
+              <div>
+                <h4 class="text-lg font-bold text-white mb-2">Exemplo 1: Cálculo Básico</h4>
+                <p class="text-gray-300">Para resolver a equação 2x + 5 = 15, primeiro isolamos o termo com x:</p>
+                <p class="text-gray-300 mt-2">2x = 15 - 5</p>
+                <p class="text-gray-300">2x = 10</p>
+                <p class="text-gray-300">x = 10 / 2</p>
+                <p class="text-gray-300">x = 5</p>
+              </div>
+            </div>
+          </div>
+          
+          <div id="tab-exercises" class="tab-content hidden">
+            <h3 class="text-xl font-bold text-white mb-4">Exercícios</h3>
+            <div class="space-y-4">
+              <div class="bg-gray-800 p-4 rounded-lg">
+                <h4 class="text-lg font-bold text-white mb-2">Exercício 1</h4>
+                <p class="text-gray-300 mb-3">Resolva a equação: 3x - 7 = 14</p>
+                <div class="progress-checkbox-container">
+                  <input type="checkbox" id="exercise1" class="progress-checkbox">
+                  <label for="exercise1" class="text-gray-300">Marcar como concluído</label>
+                </div>
+              </div>
+              <div class="bg-gray-800 p-4 rounded-lg">
+                <h4 class="text-lg font-bold text-white mb-2">Exercício 2</h4>
+                <p class="text-gray-300 mb-3">Calcule a área de um triângulo com base 8cm e altura 5cm.</p>
+                <div class="progress-checkbox-container">
+                  <input type="checkbox" id="exercise2" class="progress-checkbox">
+                  <label for="exercise2" class="text-gray-300">Marcar como concluído</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div id="tab-notes" class="tab-content hidden">
+            <h3 class="text-xl font-bold text-white mb-4">Anotações</h3>
+            <p class="text-gray-400 mb-4">Use este espaço para registrar suas anotações sobre o conteúdo estudado. Elas serão salvas automaticamente.</p>
+            <textarea id="notes-textarea" class="notes-textarea" placeholder="Digite suas anotações aqui..."></textarea>
+            <div class="mt-4 flex justify-end">
+              <button id="save-notes-btn" class="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                Salvar Anotações
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Modal de Detalhes do Livro -->
+    <div id="book-detail-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="book-title">
+      <div class="modal-content book-detail-modal-content max-w-6xl">
+        <button class="modal-close-btn" aria-label="Fechar modal">
+          <i class="ri-close-line"></i>
+        </button>
+        <div class="flex flex-col md:flex-row gap-6">
+          <div class="md:w-1/3">
+            <div class="sticky top-4">
+              <img id="book-detail-cover" src="" alt="" class="book-detail-cover">
+              <div class="mt-4 space-y-3">
+                <button id="favorite-book-btn" class="w-full book-detail-action favorite">
+                  <i class="ri-bookmark-line mr-2"></i> Favoritar
+                </button>
+                <a id="book-link" href="" target="_blank" class="block w-full book-detail-action external">
+                  Ver no site original
+                </a>
+                <button id="download-book-btn" class="w-full book-detail-action download">
+                  <i class="ri-download-line mr-2"></i> Baixar
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="md:w-2/3 book-detail-info">
+            <h2 id="book-title" class="text-2xl font-bold text-white mb-2"></h2>
+            <p id="book-author" class="text-xl text-gray-300 mb-4"></p>
+            
+            <div class="book-detail-meta">
+              <div class="book-detail-meta-item">
+                <p class="label">Ano</p>
+                <p id="book-year" class="value"></p>
+              </div>
+              <div class="book-detail-meta-item">
+                <p class="label">Páginas</p>
+                <p id="book-pages" class="value"></p>
+              </div>
+              <div class="book-detail-meta-item">
+                <p class="label">Idioma</p>
+                <p id="book-language" class="value"></p>
+              </div>
+              <div class="book-detail-meta-item">
+                <p class="label">Avaliação</p>
+                <p id="book-rating" class="value"></p>
+              </div>
+            </div>
+            
+            <div class="book-detail-section">
+              <h3><i class="ri-description-line mr-2"></i>Descrição</h3>
+              <p id="book-description" class="text-gray-300"></p>
+            </div>
+            
+            <div class="book-detail-section">
+              <h3><i class="ri-price-tag-3-line mr-2"></i>Categorias</h3>
+              <div id="book-categories" class="book-detail-categories"></div>
+            </div>
+            
+            <div id="book-preview-section" class="book-detail-section hidden">
+              <h3><i class="ri-eye-line mr-2"></i>Prévia</h3>
+              <div id="book-preview" class="bg-gray-800 p-4 rounded-lg">
+                <!-- A prévia será carregada aqui -->
+              </div>
+            </div>
+            
+            <div id="book-download-section" class="book-detail-section hidden">
+              <h3><i class="ri-download-line mr-2"></i>Download</h3>
+              <div class="flex space-x-3">
+                <a id="book-download-pdf" href="" target="_blank" class="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors text-center">
+                  <i class="ri-file-pdf-line mr-2"></i> PDF
+                </a>
+                <a id="book-download-epub" href="" target="_blank" class="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors text-center">
+                  <i class="ri-file-text-line mr-2"></i> EPUB
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Variáveis globais
+      let currentSubject = 'matematica';
+      let currentPage = 1;
+      let currentUnit = 1;
+      let isOffline = false;
+      let offlineStartTime = null;
+      let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+      
+      // Mapeamento de cores por matéria - CORRIGIDAS
+      const subjectColors = {
+        'matematica': '#EF4444', // Vermelho
+        'portugues': '#F97316', // Laranja
+        'geografia': '#EAB308', // Amarelo
+        'historia': '#A855F7', // Roxo
+        'artes': '#EC4899', // Rosa
+        'redacao': '#06B6D4' // Ciano
+      };
+      
+      // Mapeamento de ícones por matéria
+      const subjectIcons = {
+        'matematica': 'ri-calculator-line',
+        'portugues': 'ri-book-line',
+        'geografia': 'ri-map-line',
+        'historia': 'ri-ancient-gate-line',
+        'artes': 'ri-palette-line',
+        'redacao': 'ri-quill-pen-line'
+      };
+      
+      // Função para inicializar a aplicação
+      document.addEventListener('DOMContentLoaded', function() {
+        // Verificar status de conexão
+        checkConnectionStatus();
+        
+        // Inicializar funcionalidades
+        initSidebar();
+        initNavigation();
+        initCourseDropdown();
+        initGuideModal();
+        initLibrary();
+        initPreloader();
+        initMyLibrary();
+        
+        // Configurar listeners de eventos offline/online
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        
+        // Exibir o aplicativo após o carregamento inicial
+        setTimeout(() => {
+          document.querySelector('.app-container').style.opacity = '1';
+          document.querySelector('.app-container').style.visibility = 'visible';
+          hidePreloader();
+        }, 1500);
+      });
+      
+      // Função para inicializar a sidebar
+      function initSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+        
+        // Toggle sidebar com o botão
+        sidebarToggleBtn.addEventListener('click', function() {
+          sidebar.classList.toggle('collapsed');
+          document.getElementById('main-content-wrapper').classList.toggle('sidebar-collapsed');
+        });
+        
+        // Fechar sidebar quando clica fora
+        document.addEventListener('click', function(event) {
+          // Se a sidebar não está recolhida e o clique não foi dentro da sidebar
+          if (!sidebar.classList.contains('collapsed') && !sidebar.contains(event.target)) {
+            sidebar.classList.add('collapsed');
+            document.getElementById('main-content-wrapper').classList.add('sidebar-collapsed');
+          }
+        });
+        
+        // Impedir que o clique dentro da sidebar feche ela
+        sidebar.addEventListener('click', function(event) {
+          event.stopPropagation();
+        });
+      }
+      
+      // Função para inicializar a navegação
+      function initNavigation() {
+        const navItems = document.querySelectorAll('.sidebar-item');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // Adicionar evento de clique aos itens de navegação
+        navItems.forEach(item => {
+          item.addEventListener('click', function() {
+            const targetId = this.id.replace('nav-', 'page-');
+            const targetPage = document.getElementById(targetId);
+            
+            if (targetPage) {
+              // Remover classe active de todos os itens
+              navItems.forEach(navItem => {
+                navItem.classList.remove('active');
+              });
+              
+              // Adicionar classe active ao item clicado
+              this.classList.add('active');
+              
+              // Esconder todas as páginas
+              tabContents.forEach(tab => {
+                tab.classList.add('hidden');
+              });
+              
+              // Mostrar a página alvo
+              targetPage.classList.remove('hidden');
+              
+              // Mostrar preloader ao trocar de seção
+              showPreloader();
+              
+              // Atualizar cor do preloader conforme a seção
+              if (targetId === 'page-learn') {
+                updatePreloaderColor(currentSubject);
+              } else {
+                // Definir cor padrão para outras seções
+                updatePreloaderColor('portugues');
+              }
+              
+              // Esconder preloader após carregar
+              setTimeout(() => {
+                hidePreloader();
+              }, 1000);
+              
+              // Se for a página Minha Biblioteca, carregar os favoritos
+              if (targetId === 'page-my-library') {
+                loadFavoriteBooks();
+              }
+            }
+          });
+        });
+        
+        // Adicionar evento de clique aos botões "Voltar à Trilha"
+        const backButtons = document.querySelectorAll('[id^="back-to-learn-"]');
+        backButtons.forEach(button => {
+          button.addEventListener('click', function() {
+            // Voltar para a página de aprendizagem
+            document.getElementById('nav-learn').click();
+          });
+        });
+      }
+      
+      // Função para inicializar o dropdown de cursos
+      function initCourseDropdown() {
+        const dropdownBtn = document.getElementById('courseDropdownBtn');
+        const dropdown = document.getElementById('courseDropdown');
+        const courseOptions = document.querySelectorAll('.course-option');
+        
+        // Toggle dropdown
+        dropdownBtn.addEventListener('click', function() {
+          const isExpanded = this.getAttribute('aria-expanded') === 'true';
+          this.setAttribute('aria-expanded', !isExpanded);
+          dropdown.classList.toggle('hidden');
+        });
+        
+        // Fechar dropdown quando clica fora
+        document.addEventListener('click', function(event) {
+          if (!dropdownBtn.contains(event.target) && !dropdown.contains(event.target)) {
+            dropdownBtn.setAttribute('aria-expanded', 'false');
+            dropdown.classList.add('hidden');
+          }
+        });
+        
+        // Selecionar curso
+        courseOptions.forEach(option => {
+          option.addEventListener('click', function() {
+            const subject = this.getAttribute('data-subject');
+            currentSubject = subject;
+            
+            // Atualizar texto da unidade
+            const subjectNames = {
+              'matematica': 'Matemática',
+              'portugues': 'Português',
+              'geografia': 'Geografia',
+              'historia': 'História',
+              'artes': 'Artes',
+              'redacao': 'Redação'
+            };
+            
+            document.getElementById('current-unit-text').textContent = `SEÇÃO 1, UNIDADE 1`;
+            document.getElementById('current-chapter-title').textContent = subjectNames[subject];
+            
+            // Atualizar cor primária
+            document.documentElement.style.setProperty('--primary-color', subjectColors[subject]);
+            document.documentElement.style.setProperty('--primary-color-rgb', hexToRgb(subjectColors[subject]));
+            
+            // Fechar dropdown
+            dropdownBtn.setAttribute('aria-expanded', 'false');
+            dropdown.classList.add('hidden');
+            
+            // Atualizar cor das unidades
+            updateUnitColors(subject);
+            
+            // Mostrar preloader com a nova cor
+            updatePreloaderColor(subject);
+            showPreloader();
+            setTimeout(() => {
+              hidePreloader();
+            }, 1000);
+            
+            // Se estiver na página de aprendizagem, recarregar o conteúdo
+            if (!document.getElementById('page-learn').classList.contains('hidden')) {
+              loadLearningPath(subject);
+            }
+          });
+        });
+      }
+      
+      // Função para inicializar o modal do guia
+      function initGuideModal() {
+        const openBtn = document.getElementById('openGuideModalBtn');
+        const modal = document.getElementById('guide-modal');
+        const closeBtn = modal.querySelector('.modal-close-btn');
+        const tabButtons = modal.querySelectorAll('.tab-button');
+        const tabContents = modal.querySelectorAll('.tab-content');
+        
+        // Abrir modal
+        openBtn.addEventListener('click', function() {
+          // Atualizar conteúdo do guia conforme a matéria atual
+          updateGuideContent(currentSubject);
+          
+          modal.classList.add('show');
+          document.body.classList.add('modal-open');
+        });
+        
+        // Fechar modal
+        closeBtn.addEventListener('click', function() {
+          modal.classList.remove('show');
+          document.body.classList.remove('modal-open');
+        });
+        
+        // Fechar modal ao clicar fora
+        modal.addEventListener('click', function(event) {
+          if (event.target === modal) {
+            modal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+          }
+        });
+        
+        // Trocar abas
+        tabButtons.forEach(button => {
+          button.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+            
+            // Remover classe active de todos os botões e conteúdos
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Adicionar classe active ao botão clicado e conteúdo correspondente
+            this.classList.add('active');
+            document.getElementById(`tab-${targetTab}`).classList.add('active');
+          });
+        });
+        
+        // Salvar anotações
+        const saveNotesBtn = document.getElementById('save-notes-btn');
+        const notesTextarea = document.getElementById('notes-textarea');
+        
+        saveNotesBtn.addEventListener('click', function() {
+          const notes = notesTextarea.value;
+          const key = `notes-${currentSubject}-${currentUnit}`;
+          
+          // Salvar no localStorage
+          localStorage.setItem(key, notes);
+          
+          // Mostrar notificação
+          showNotification('Anotações salvas com sucesso!');
+        });
+        
+        // Carregar anotações salvas
+        const savedNotes = localStorage.getItem(`notes-${currentSubject}-${currentUnit}`);
+        if (savedNotes) {
+          notesTextarea.value = savedNotes;
+        }
+      }
+      
+      // Função para inicializar a biblioteca
+      function initLibrary() {
+        const searchInput = document.querySelector('.search-input');
+        const booksGrid = document.getElementById('library-books-grid');
+        const loadingIndicator = document.getElementById('library-loading');
+        const emptyState = document.getElementById('library-empty-state');
+        const filters = document.querySelectorAll('.library-filter');
+        
+        let currentPage = 1;
+        let currentQuery = '';
+        let currentFilter = 'all';
+        let isLoading = false;
+        let hasMoreBooks = true;
+        
+        // Carregar livros iniciais
+        loadBooks();
+        
+        // Event listener para busca
+        searchInput.addEventListener('input', debounce(function() {
+          currentQuery = this.value.trim();
+          currentPage = 1;
+          hasMoreBooks = true;
+          booksGrid.innerHTML = '';
+          loadBooks();
+        }, 500));
+        
+        // Event listeners para filtros
+        filters.forEach(filter => {
+          filter.addEventListener('click', function() {
+            // Atualizar filtro ativo
+            filters.forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Atualizar filtro atual
+            currentFilter = this.dataset.filter;
+            currentPage = 1;
+            hasMoreBooks = true;
+            booksGrid.innerHTML = '';
+            loadBooks();
+          });
+        });
+        
+        // Event listener para scroll infinito
+        window.addEventListener('scroll', function() {
+          if (isLoading || !hasMoreBooks) return;
+          
+          if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+            loadBooks();
+          }
+        });
+        
+        // Função para carregar livros
+        async function loadBooks() {
+          if (isLoading || !hasMoreBooks) return;
+          
+          isLoading = true;
+          loadingIndicator.style.display = 'flex';
+          emptyState.style.display = 'none';
+          
+          try {
+            // Buscar livros da Open Library
+            const openLibraryBooks = await fetchFromOpenLibrary(currentQuery, currentFilter, currentPage);
+            
+            // Buscar livros do Google Books
+            const googleBooks = await fetchFromGoogleBooks(currentQuery, currentFilter, currentPage);
+            
+            // Combinar e remover duplicados
+            const allBooks = [...openLibraryBooks, ...googleBooks];
+            const uniqueBooks = removeDuplicates(allBooks);
+            
+            // Exibir livros
+            if (uniqueBooks.length > 0) {
+              displayBooks(uniqueBooks);
+              currentPage++;
+              
+              // Verificar se há mais livros para carregar
+              hasMoreBooks = uniqueBooks.length >= 10; // Assumindo que 10 é o tamanho da página
+            } else if (currentPage === 1) {
+              // Se não há livros e é a primeira página, mostrar estado vazio
+              emptyState.style.display = 'block';
+            } else {
+              // Não há mais livros para carregar
+              hasMoreBooks = false;
+            }
+          } catch (error) {
+            console.error('Erro ao carregar livros:', error);
+            emptyState.style.display = 'block';
+          } finally {
+            isLoading = false;
+            loadingIndicator.style.display = 'none';
+          }
+        }
+        
+        // Função para buscar livros da Open Library
+        async function fetchFromOpenLibrary(query, filter, page) {
+          const limit = 10;
+          const offset = (page - 1) * limit;
+          
+          let searchUrl = `https://openlibrary.org/search.json?limit=${limit}&offset=${offset}`;
+          
+          if (query) {
+            searchUrl += `&q=${encodeURIComponent(query)}`;
+          } else {
+            // Se não há query, buscar por assunto baseado no filtro
+            if (filter !== 'all') {
+              searchUrl += `&subject=${encodeURIComponent(getSubjectFromFilter(filter))}`;
+            } else {
+              searchUrl += `&q=portuguese`; // Busca padrão
+            }
+          }
+          
+          try {
+            const response = await fetch(searchUrl);
+            const data = await response.json();
+            
+            return data.docs.map(book => ({
+              id: book.key,
+              title: book.title,
+              author: book.author_name ? book.author_name[0] : 'Autor desconhecido',
+              coverUrl: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : null,
+              year: book.first_publish_year || 'N/A',
+              pages: book.number_of_pages_median || 'N/A',
+              language: book.language ? book.language[0] : 'N/A',
+              rating: book.ratings_average ? book.ratings_average.toFixed(1) : 'N/A',
+              description: null, // Open Library não fornece descrição na busca básica
+              categories: book.subject ? book.subject.slice(0, 3) : [], // Limitar a 3 categorias
+              previewLink: null, // Open Library não fornece prévia na busca básica
+              downloadLinks: null, // Open Library não fornece links de download na busca básica
+              source: 'Open Library',
+              sourceUrl: `https://openlibrary.org${book.key}`
+            }));
+          } catch (error) {
+            console.error('Erro ao buscar da Open Library:', error);
+            return [];
+          }
+        }
+        
+        // Função para buscar livros do Google Books
+        async function fetchFromGoogleBooks(query, filter, page) {
+          const maxResults = 10;
+          const startIndex = (page - 1) * maxResults;
+          
+          let searchUrl = `https://www.googleapis.com/books/v1/volumes?maxResults=${maxResults}&startIndex=${startIndex}`;
+          
+          if (query) {
+            searchUrl += `&q=${encodeURIComponent(query)}`;
+          } else {
+            // Se não há query, buscar por assunto baseado no filtro
+            if (filter !== 'all') {
+              searchUrl += `&q=subject:${encodeURIComponent(getSubjectFromFilter(filter))}`;
+            } else {
+              searchUrl += `&q=portuguese`; // Busca padrão
+            }
+          }
+          
+          try {
+            const response = await fetch(searchUrl);
+            const data = await response.json();
+            
+            return data.items.map(item => {
+              const volumeInfo = item.volumeInfo;
+              
+              return {
+                id: item.id,
+                title: volumeInfo.title,
+                author: volumeInfo.authors ? volumeInfo.authors[0] : 'Autor desconhecido',
+                coverUrl: volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : null,
+                year: volumeInfo.publishedDate ? volumeInfo.publishedDate.substring(0, 4) : 'N/A',
+                pages: volumeInfo.pageCount || 'N/A',
+                language: volumeInfo.language || 'N/A',
+                rating: volumeInfo.averageRating ? volumeInfo.averageRating.toFixed(1) : 'N/A',
+                description: volumeInfo.description || null,
+                categories: volumeInfo.categories || [],
+                previewLink: volumeInfo.previewLink || null,
+                downloadLinks: {
+                  pdf: volumeInfo.pdfLink || null,
+                  epub: volumeInfo.epubLink || null
+                },
+                source: 'Google Books',
+                sourceUrl: volumeInfo.previewLink || volumeInfo.infoLink
+              };
+            });
+          } catch (error) {
+            console.error('Erro ao buscar do Google Books:', error);
+            return [];
+          }
+        }
+        
+        // Função para remover duplicados baseado no título e autor
+        function removeDuplicates(books) {
+          const uniqueBooks = [];
+          const seen = new Set();
+          
+          for (const book of books) {
+            const key = `${book.title.toLowerCase()}-${book.author.toLowerCase()}`;
+            
+            if (!seen.has(key)) {
+              seen.add(key);
+              uniqueBooks.push(book);
+            }
+          }
+          
+          return uniqueBooks;
+        }
+        
+        // Função para obter assunto a partir do filtro
+        function getSubjectFromFilter(filter) {
+          const filterToSubject = {
+            'portugues': 'portuguese language',
+            'matematica': 'mathematics',
+            'ciencias': 'science',
+            'historia': 'history',
+            'geografia': 'geography',
+            'artes': 'art',
+            'literatura': 'literature'
+          };
+          
+          return filterToSubject[filter] || 'portuguese';
+        }
+        
+        // Função para exibir livros na grade
+        function displayBooks(books) {
+          books.forEach(book => {
+            const bookCard = createBookCard(book);
+            booksGrid.appendChild(bookCard);
+          });
+        }
+        
+        // Função para criar um card de livro
+        function createBookCard(book) {
+          const card = document.createElement('div');
+          card.className = 'library-book-card cursor-pointer';
+          
+          const coverUrl = book.coverUrl || 'https://via.placeholder.com/200x300?text=Sem+Capa';
+          
+          // Verificar se o livro está nos favoritos
+          const isFavorite = favorites.some(fav => fav.id === book.id);
+          
+          card.innerHTML = `
+            <div class="library-book-cover">
+              <img src="${coverUrl}" alt="${book.title}" class="w-full h-full object-cover">
+            </div>
+            <div class="library-book-info">
+              <h3 class="library-book-title">${book.title}</h3>
+              <p class="library-book-author">${book.author}</p>
+              <div class="library-book-meta">
+                <span>${book.year}</span>
+                ${book.rating !== 'N/A' ? `<span>★ ${book.rating}</span>` : ''}
+              </div>
+              <div class="library-book-actions">
+                <button class="library-book-button favorite ${isFavorite ? 'active' : ''}" data-book-id="${book.id}">
+                  <i class="${isFavorite ? 'ri-bookmark-fill' : 'ri-bookmark-line'}"></i>
+                </button>
+              </div>
+            </div>
+          `;
+          
+          // Adicionar evento de clique para mostrar detalhes
+          card.addEventListener('click', function(event) {
+            // Se o clique foi no botão de favorito, não abrir o modal
+            if (event.target.closest('.library-book-button.favorite')) {
+              return;
+            }
+            
+            showBookDetails(book);
+          });
+          
+          // Adicionar evento de clique para favoritar
+          card.querySelector('.library-book-button.favorite').addEventListener('click', function(event) {
+            event.stopPropagation(); // Impedir que o clique se propague para o card
+            toggleFavorite(book, this);
+          });
+          
+          return card;
+        }
+        
+        // Função para mostrar detalhes do livro
+        function showBookDetails(book) {
+          const modal = document.getElementById('book-detail-modal');
+          
+          // Preencher os dados do livro no modal
+          document.getElementById('book-detail-cover').src = book.coverUrl || 'https://via.placeholder.com/200x300?text=Sem+Capa';
+          document.getElementById('book-detail-cover').alt = book.title;
+          document.getElementById('book-title').textContent = book.title;
+          document.getElementById('book-author').textContent = book.author;
+          document.getElementById('book-year').textContent = book.year;
+          document.getElementById('book-pages').textContent = book.pages;
+          document.getElementById('book-language').textContent = book.language;
+          
+          // Preencher a avaliação
+          const ratingElement = document.getElementById('book-rating');
+          if (book.rating !== 'N/A') {
+            ratingElement.innerHTML = `
+              <i class="ri-star-fill text-yellow-400 mr-1"></i>
+              ${book.rating}
+            `;
+          } else {
+            ratingElement.textContent = 'N/A';
+          }
+          
+          // Preencher a descrição
+          const descriptionElement = document.getElementById('book-description');
+          if (book.description) {
+            descriptionElement.textContent = book.description;
+          } else {
+            descriptionElement.textContent = 'Descrição não disponível.';
+          }
+          
+          // Preencher as categorias
+          const categoriesElement = document.getElementById('book-categories');
+          categoriesElement.innerHTML = '';
+          if (book.categories && book.categories.length > 0) {
+            book.categories.forEach(category => {
+              const categoryTag = document.createElement('span');
+              categoryTag.className = 'book-detail-category';
+              categoryTag.textContent = category;
+              categoriesElement.appendChild(categoryTag);
+            });
+          } else {
+            categoriesElement.innerHTML = '<span class="text-gray-400">Nenhuma categoria disponível</span>';
+          }
+          
+          // Configurar o link para o site original
+          const bookLink = document.getElementById('book-link');
+          bookLink.href = book.sourceUrl;
+          
+          // Configurar o botão de favorito
+          const favoriteBtn = document.getElementById('favorite-book-btn');
+          const isFavorite = favorites.some(fav => fav.id === book.id);
+          
+          if (isFavorite) {
+            favoriteBtn.innerHTML = '<i class="ri-bookmark-fill mr-2"></i> Remover dos favoritos';
+            favoriteBtn.classList.add('active');
+          } else {
+            favoriteBtn.innerHTML = '<i class="ri-bookmark-line mr-2"></i> Favoritar';
+            favoriteBtn.classList.remove('active');
+          }
+          
+          // Adicionar evento de clique para favoritar
+          favoriteBtn.onclick = function() {
+            toggleFavorite(book);
+            // Atualizar o botão
+            const updatedIsFavorite = favorites.some(fav => fav.id === book.id);
+            if (updatedIsFavorite) {
+              favoriteBtn.innerHTML = '<i class="ri-bookmark-fill mr-2"></i> Remover dos favoritos';
+              favoriteBtn.classList.add('active');
+            } else {
+              favoriteBtn.innerHTML = '<i class="ri-bookmark-line mr-2"></i> Favoritar';
+              favoriteBtn.classList.remove('active');
+            }
+          };
+          
+          // Configurar o botão de download
+          const downloadBtn = document.getElementById('download-book-btn');
+          downloadBtn.onclick = function() {
+            downloadBook(book);
+          };
+          
+          // Seção de prévia (se disponível)
+          const previewSection = document.getElementById('book-preview-section');
+          const previewElement = document.getElementById('book-preview');
+          
+          if (book.previewLink) {
+            previewSection.classList.remove('hidden');
+            previewElement.innerHTML = `
+              <iframe 
+                src="${book.previewLink}&embedded=true" 
+                class="w-full h-96" 
+                frameborder="0"
+                allowfullscreen>
+              </iframe>
+            `;
+          } else {
+            previewSection.classList.add('hidden');
+          }
+          
+          // Seção de download (se disponível)
+          const downloadSection = document.getElementById('book-download-section');
+          const pdfDownloadLink = document.getElementById('book-download-pdf');
+          const epubDownloadLink = document.getElementById('book-download-epub');
+          
+          if (book.downloadLinks) {
+            downloadSection.classList.remove('hidden');
+            
+            if (book.downloadLinks.pdf) {
+              pdfDownloadLink.href = book.downloadLinks.pdf;
+              pdfDownloadLink.classList.remove('hidden');
+            } else {
+              pdfDownloadLink.classList.add('hidden');
+            }
+            
+            if (book.downloadLinks.epub) {
+              epubDownloadLink.href = book.downloadLinks.epub;
+              epubDownloadLink.classList.remove('hidden');
+            } else {
+              epubDownloadLink.classList.add('hidden');
+            }
+          } else {
+            downloadSection.classList.add('hidden');
+          }
+          
+          // Mostrar o modal
+          modal.classList.add('show');
+          document.body.classList.add('modal-open');
+          
+          // Adicionar evento de clique para fechar o modal
+          const closeBtn = modal.querySelector('.modal-close-btn');
+          closeBtn.onclick = function() {
+            modal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+          };
+          
+          // Fechar modal ao clicar fora
+          modal.onclick = function(event) {
+            if (event.target === modal) {
+              modal.classList.remove('show');
+              document.body.classList.remove('modal-open');
+            }
+          };
+        }
+        
+        // Função para alternar favorito
+        function toggleFavorite(book, buttonElement) {
+          const index = favorites.findIndex(fav => fav.id === book.id);
+          
+          if (index === -1) {
+            // Adicionar aos favoritos
+            favorites.push(book);
+            showNotification('Livro adicionado aos favoritos!');
+          } else {
+            // Remover dos favoritos
+            favorites.splice(index, 1);
+            showNotification('Livro removido dos favoritos!');
+          }
+          
+          // Atualizar o botão
+          if (buttonElement) {
+            const icon = buttonElement.querySelector('i');
+            if (index === -1) {
+              buttonElement.classList.add('active');
+              icon.classList.remove('ri-bookmark-line');
+              icon.classList.add('ri-bookmark-fill');
+            } else {
+              buttonElement.classList.remove('active');
+              icon.classList.remove('ri-bookmark-fill');
+              icon.classList.add('ri-bookmark-line');
+            }
+          }
+          
+          // Salvar no localStorage
+          localStorage.setItem('favorites', JSON.stringify(favorites));
+          
+          // Se estiver na página "Minha Biblioteca", recarregar a lista
+          if (!document.getElementById('page-my-library').classList.contains('hidden')) {
+            loadFavoriteBooks();
+          }
+        }
+        
+        // Função para baixar livro
+        function downloadBook(book) {
+          // Verificar se o livro está nos favoritos
+          const isFavorite = favorites.some(fav => fav.id === book.id);
+          
+          if (!isFavorite) {
+            showNotification('Adicione o livro aos favoritos antes de baixá-lo.');
+            return;
+          }
+          
+          // Se houver links de download, usar eles
+          if (book.downloadLinks) {
+            if (book.downloadLinks.pdf) {
+              const link = document.createElement('a');
+              link.href = book.downloadLinks.pdf;
+              link.download = `${book.title}.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              showNotification('Download iniciado!');
+              return;
+            }
+            
+            if (book.downloadLinks.epub) {
+              const link = document.createElement('a');
+              link.href = book.downloadLinks.epub;
+              link.download = `${book.title}.epub`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              showNotification('Download iniciado!');
+              return;
+            }
+          }
+          
+          // Se não houver links de download, tentar usar o link da fonte
+          if (book.sourceUrl) {
+            window.open(book.sourceUrl, '_blank');
+            showNotification('Abrindo página de download no site original...');
+          } else {
+            showNotification('Não foi possível encontrar um link para download.');
+          }
+        }
+      }
+      
+      // Função para inicializar a seção Minha Biblioteca
+      function initMyLibrary() {
+        // Event listener para quando a página for aberta
+        document.getElementById('nav-my-library').addEventListener('click', function() {
+          loadFavoriteBooks();
+        });
+      }
+      
+      // Função para carregar livros favoritos
+      function loadFavoriteBooks() {
+        const myLibraryContent = document.getElementById('my-library-content');
+        
+        if (favorites.length === 0) {
+          myLibraryContent.innerHTML = `
+            <div class="my-library-empty">
+              <i class="ri-bookmark-line"></i>
+              <h3 class="text-xl font-bold text-white mt-2">Nenhum livro favorito</h3>
+              <p class="text-gray-400 mt-1">Adicione livros aos favoritos para vê-los aqui.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        myLibraryContent.innerHTML = `
+          <div class="my-library-grid">
+            ${favorites.map(book => `
+              <div class="my-library-book-card" data-book-id="${book.id}">
+                <img src="${book.coverUrl || 'https://via.placeholder.com/200x300?text=Sem+Capa'}" alt="${book.title}" class="my-library-book-cover">
+                <div class="my-library-book-info">
+                  <h3 class="my-library-book-title">${book.title}</h3>
+                  <p class="my-library-book-author">${book.author}</p>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        
+        // Adicionar evento de clique aos cards
+        const bookCards = myLibraryContent.querySelectorAll('.my-library-book-card');
+        bookCards.forEach(card => {
+          card.addEventListener('click', function() {
+            const bookId = this.getAttribute('data-book-id');
+            const book = favorites.find(fav => fav.id === bookId);
+            if (book) {
+              // Mostrar preloader
+              showPreloaderWithMessage('Carregando o que você salvou...');
+              
+              // Simular carregamento
+              setTimeout(() => {
+                hidePreloader();
+                showBookDetails(book);
+              }, 1500);
+            }
+          });
+        });
+      }
+      
+      // Função para inicializar o preloader
+      function initPreloader() {
+        const preloaderOverlay = document.getElementById('preloader-overlay');
+        const preloaderSpinner = document.getElementById('preloader-spinner');
+        
+        // Definir cor inicial do preloader
+        updatePreloaderColor(currentSubject);
+        
+        // Mostrar preloader inicialmente
+        preloaderOverlay.classList.add('show');
+        
+        // Configurar botão de cancelar (se necessário)
+        const cancelBtn = document.getElementById('preloader-cancel-btn');
+        if (cancelBtn) {
+          cancelBtn.addEventListener('click', function() {
+            hidePreloader();
+          });
+        }
+      }
+      
+      // Função para mostrar o preloader
+      function showPreloader() {
+        const preloaderOverlay = document.getElementById('preloader-overlay');
+        preloaderOverlay.classList.add('show');
+        document.body.classList.add('modal-open');
+      }
+      
+      // Função para esconder o preloader
+      function hidePreloader() {
+        const preloaderOverlay = document.getElementById('preloader-overlay');
+        preloaderOverlay.classList.remove('show');
+        document.body.classList.remove('modal-open');
+      }
+      
+      // Função para mostrar o preloader com mensagem personalizada
+      function showPreloaderWithMessage(message) {
+        const preloaderOverlay = document.getElementById('preloader-overlay');
+        const preloaderStatusMessage = document.getElementById('preloader-status-message');
+        
+        // Atualizar a mensagem
+        preloaderStatusMessage.textContent = message;
+        
+        // Mostrar preloader
+        preloaderOverlay.classList.add('show');
+        document.body.classList.add('modal-open');
+      }
+      
+      // Função para atualizar a cor do preloader
+      function updatePreloaderColor(subject) {
+        const spinner = document.getElementById('preloader-spinner');
+        
+        // Remover todas as classes de cor
+        spinner.classList.remove('spinner-math', 'spinner-portuguese', 'spinner-geography', 'spinner-history', 'spinner-art', 'spinner-writing');
+        
+        // Adicionar a classe correspondente à matéria
+        switch(subject) {
+          case 'matematica':
+            spinner.classList.add('spinner-math');
+            break;
+          case 'portugues':
+            spinner.classList.add('spinner-portuguese');
+            break;
+          case 'geografia':
+            spinner.classList.add('spinner-geography');
+            break;
+          case 'historia':
+            spinner.classList.add('spinner-history');
+            break;
+          case 'artes':
+            spinner.classList.add('spinner-art');
+            break;
+          case 'redacao':
+            spinner.classList.add('spinner-writing');
+            break;
+          default:
+            spinner.classList.add('spinner-portuguese'); // Padrão
+        }
+      }
+      
+      // Função para atualizar o conteúdo do guia conforme a matéria
+      function updateGuideContent(subject) {
+        const overviewTab = document.getElementById('tab-overview');
+        const examplesTab = document.getElementById('tab-examples');
+        const exercisesTab = document.getElementById('tab-exercises');
+        
+        // Conteúdo baseado na matéria
+        switch(subject) {
+          case 'matematica':
+            overviewTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Visão Geral</h3>
+              <p class="text-gray-300 mb-4">Nesta unidade de matemática, você aprenderá conceitos fundamentais que são essenciais para o desenvolvimento do raciocínio lógico e resolução de problemas.</p>
+              <div class="bg-gray-800 p-4 rounded-lg mb-4">
+                <h4 class="text-lg font-bold text-white mb-2">Objetivos de Aprendizagem</h4>
+                <ul class="list-disc list-inside text-gray-300 space-y-1">
+                  <li>Compreender os conceitos básicos da unidade</li>
+                  <li>Aplicar fórmulas e métodos adequados</li>
+                  <li>Resolver problemas do dia a dia usando conceitos matemáticos</li>
+                </ul>
+              </div>
+            `;
+            examplesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exemplos Práticos</h3>
+              <div class="exemplification-area">
+                <div class="icon-dynamic-color">
+                  <i class="ri-calculator-line"></i>
+                </div>
+                <div>
+                  <h4 class="text-lg font-bold text-white mb-2">Exemplo 1: Cálculo Básico</h4>
+                  <p class="text-gray-300">Para resolver a equação 2x + 5 = 15, primeiro isolamos o termo com x:</p>
+                  <p class="text-gray-300 mt-2">2x = 15 - 5</p>
+                  <p class="text-gray-300">2x = 10</p>
+                  <p class="text-gray-300">x = 10 / 2</p>
+                  <p class="text-gray-300">x = 5</p>
+                </div>
+              </div>
+            `;
+            exercisesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exercícios</h3>
+              <div class="space-y-4">
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 1</h4>
+                  <p class="text-gray-300 mb-3">Resolva a equação: 3x - 7 = 14</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise1" class="progress-checkbox">
+                    <label for="exercise1" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 2</h4>
+                  <p class="text-gray-300 mb-3">Calcule a área de um triângulo com base 8cm e altura 5cm.</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise2" class="progress-checkbox">
+                    <label for="exercise2" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+              </div>
+            `;
+            break;
+            
+          case 'portugues':
+            overviewTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Visão Geral</h3>
+              <p class="text-gray-300 mb-4">Nesta unidade de português, você aprimorará suas habilidades de leitura, escrita e interpretação textual, elementos essenciais para a comunicação eficaz.</p>
+              <div class="bg-gray-800 p-4 rounded-lg mb-4">
+                <h4 class="text-lg font-bold text-white mb-2">Objetivos de Aprendizagem</h4>
+                <ul class="list-disc list-inside text-gray-300 space-y-1">
+                  <li>Identificar elementos estruturais de textos</li>
+                  <li>Produzir textos com coerência e coesão</li>
+                  <li>Interpretar diferentes gêneros textuais</li>
+                </ul>
+              </div>
+            `;
+            examplesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exemplos Práticos</h3>
+              <div class="exemplification-area">
+                <div class="icon-dynamic-color">
+                  <i class="ri-book-line"></i>
+                </div>
+                <div>
+                  <h4 class="text-lg font-bold text-white mb-2">Exemplo 1: Interpretação Textual</h4>
+                  <p class="text-gray-300">Ao ler o texto "A Moreninha", de Joaquim Manuel de Macedo, observe:</p>
+                  <p class="text-gray-300 mt-2">1. O contexto histórico do Romantismo brasileiro</p>
+                  <p class="text-gray-300">2. As características do protagonista e sua relação com o enredo</p>
+                  <p class="text-gray-300">3. Os elementos que definem o gênero romance</p>
+                </div>
+              </div>
+            `;
+            exercisesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exercícios</h3>
+              <div class="space-y-4">
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 1</h4>
+                  <p class="text-gray-300 mb-3">Identifique a classe gramatical das palavras destacadas na frase: "O <u>cão</u> <u>latiu</u> <u>fortemente</u> durante a <u>noite</u>."</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise1" class="progress-checkbox">
+                    <label for="exercise1" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 2</h4>
+                  <p class="text-gray-300 mb-3">Reescreva a frase abaixo na voz passiva: "O professor explicou a matéria aos alunos."</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise2" class="progress-checkbox">
+                    <label for="exercise2" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+              </div>
+            `;
+            break;
+            
+          case 'geografia':
+            overviewTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Visão Geral</h3>
+              <p class="text-gray-300 mb-4">Nesta unidade de geografia, você explorará conceitos relacionados à organização do espaço geográfico, compreendendo a interação entre sociedade e natureza.</p>
+              <div class="bg-gray-800 p-4 rounded-lg mb-4">
+                <h4 class="text-lg font-bold text-white mb-2">Objetivos de Aprendizagem</h4>
+                <ul class="list-disc list-inside text-gray-300 space-y-1">
+                  <li>Compreender a formação do espaço geográfico</li>
+                  <li>Analisar a relação entre sociedade e natureza</li>
+                  <li>Identificar diferentes paisagens naturais e humanizadas</li>
+                </ul>
+              </div>
+            `;
+            examplesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exemplos Práticos</h3>
+              <div class="exemplification-area">
+                <div class="icon-dynamic-color">
+                  <i class="ri-map-line"></i>
+                </div>
+                <div>
+                  <h4 class="text-lg font-bold text-white mb-2">Exemplo 1: Análise de Paisagem</h4>
+                  <p class="text-gray-300">Ao analisar uma paisagem urbana, observe:</p>
+                  <p class="text-gray-300 mt-2">1. Os elementos naturais presentes (relevo, vegetação, hidrografia)</p>
+                  <p class="text-gray-300">2. Os elementos construídos pelo ser humano (edifícios, ruas, praças)</p>
+                  <p class="text-gray-300">3. As interações entre esses elementos</p>
+                </div>
+              </div>
+            `;
+            exercisesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exercícios</h3>
+              <div class="space-y-4">
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 1</h4>
+                  <p class="text-gray-300 mb-3">Diferencie paisagem natural de paisagem humanizada, dando um exemplo de cada.</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise1" class="progress-checkbox">
+                    <label for="exercise1" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 2</h4>
+                  <p class="text-gray-300 mb-3">Explique como o processo de urbanização transforma o espaço geográfico.</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise2" class="progress-checkbox">
+                    <label for="exercise2" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+              </div>
+            `;
+            break;
+            
+          case 'historia':
+            overviewTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Visão Geral</h3>
+              <p class="text-gray-300 mb-4">Nesta unidade de história, você estudará importantes períodos e eventos que moldaram a sociedade atual, compreendendo a importância do contexto histórico.</p>
+              <div class="bg-gray-800 p-4 rounded-lg mb-4">
+                <h4 class="text-lg font-bold text-white mb-2">Objetivos de Aprendizagem</h4>
+                <ul class="list-disc list-inside text-gray-300 space-y-1">
+                  <li>Compreender a linha do tempo histórica</li>
+                  <li>Analisar causas e consequências de eventos históricos</li>
+                  <li>Relacionar o passado com o presente</li>
+                </ul>
+              </div>
+            `;
+            examplesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exemplos Práticos</h3>
+              <div class="exemplification-area">
+                <div class="icon-dynamic-color">
+                  <i class="ri-ancient-gate-line"></i>
+                </div>
+                <div>
+                  <h4 class="text-lg font-bold text-white mb-2">Exemplo 1: Análise de Fonte Histórica</h4>
+                  <p class="text-gray-300">Ao analisar um documento histórico, considere:</p>
+                  <p class="text-gray-300 mt-2">1. Quem produziu o documento e em que contexto</p>
+                  <p class="text-gray-300">2. Qual o público-alvo e qual a intenção do autor</p>
+                  <p class="text-gray-300">3. Como essa fonte nos ajuda a compreender o período</p>
+                </div>
+              </div>
+            `;
+            exercisesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exercícios</h3>
+              <div class="space-y-4">
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 1</h4>
+                  <p class="text-gray-300 mb-3">Explique as principais causas da Revolução Francesa e suas consequências.</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise1" class="progress-checkbox">
+                    <label for="exercise1" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 2</h4>
+                  <p class="text-gray-300 mb-3">Compare o sistema feudal com o capitalismo emergente, destacando suas principais diferenças.</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise2" class="progress-checkbox">
+                    <label for="exercise2" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+              </div>
+            `;
+            break;
+            
+          case 'artes':
+            overviewTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Visão Geral</h3>
+              <p class="text-gray-300 mb-4">Nesta unidade de artes, você explorará diferentes manifestações artísticas, compreendendo sua importância cultural e histórica.</p>
+              <div class="bg-gray-800 p-4 rounded-lg mb-4">
+                <h4 class="text-lg font-bold text-white mb-2">Objetivos de Aprendizagem</h4>
+                <ul class="list-disc list-inside text-gray-300 space-y-1">
+                  <li>Reconhecer diferentes estilos e movimentos artísticos</li>
+                  <li>Analisar obras de arte considerando seu contexto</li>
+                  <li>Compreender a relação entre arte e sociedade</li>
+                </ul>
+              </div>
+            `;
+            examplesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exemplos Práticos</h3>
+              <div class="exemplification-area">
+                <div class="icon-dynamic-color">
+                  <i class="ri-palette-line"></i>
+                </div>
+                <div>
+                  <h4 class="text-lg font-bold text-white mb-2">Exemplo 1: Análise de Obra de Arte</h4>
+                  <p class="text-gray-300">Ao analisar a obra "Guernica" de Picasso, observe:</p>
+                  <p class="text-gray-300 mt-2">1. Os elementos formais (cores, formas, composição)</p>
+                  <p class="text-gray-300">2. O contexto histórico em que foi produzida</p>
+                  <p class="text-gray-300">3. A mensagem que o artista pretende transmitir</p>
+                </div>
+              </div>
+            `;
+            exercisesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exercícios</h3>
+              <div class="space-y-4">
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 1</h4>
+                  <p class="text-gray-300 mb-3">Diferencie as características do Renascimento e do Barroco, citando pelo menos uma obra de cada período.</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise1" class="progress-checkbox">
+                    <label for="exercise1" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 2</h4>
+                  <p class="text-gray-300 mb-3">Explique como a arte pode ser uma forma de resistência e expressão política.</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise2" class="progress-checkbox">
+                    <label for="exercise2" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+              </div>
+            `;
+            break;
+            
+          case 'redacao':
+            overviewTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Visão Geral</h3>
+              <p class="text-gray-300 mb-4">Nesta unidade de redação, você desenvolverá habilidades para produzir textos dissertativos-argumentativos, com clareza, coerência e coesão.</p>
+              <div class="bg-gray-800 p-4 rounded-lg mb-4">
+                <h4 class="text-lg font-bold text-white mb-2">Objetivos de Aprendizagem</h4>
+                <ul class="list-disc list-inside text-gray-300 space-y-1">
+                  <li>Estruturar um texto dissertativo-argumentativo</li>
+                  <li>Desenvolver argumentos consistentes</li>
+                  <li>Utilizar recursos de coesão e coerência</li>
+                </ul>
+              </div>
+            `;
+            examplesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exemplos Práticos</h3>
+              <div class="exemplification-area">
+                <div class="icon-dynamic-color">
+                  <i class="ri-quill-pen-line"></i>
+                </div>
+                <div>
+                  <h4 class="text-lg font-bold text-white mb-2">Exemplo 1: Estrutura de Introdução</h4>
+                  <p class="text-gray-300">Uma boa introdução deve apresentar o tema e sua tese:</p>
+                  <p class="text-gray-300 mt-2">"A educação no Brasil enfrenta diversos desafios, como a desigualdade no acesso e a qualidade do ensino. Nesse contexto, é fundamental discutir as políticas públicas que visam minimizar essas problemáticas."</p>
+                </div>
+              </div>
+            `;
+            exercisesTab.innerHTML = `
+              <h3 class="text-xl font-bold text-white mb-4">Exercícios</h3>
+              <div class="space-y-4">
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 1</h4>
+                  <p class="text-gray-300 mb-3">Escreva uma introdução para uma redação sobre o tema: "O impacto das redes sociais na sociedade contemporânea".</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise1" class="progress-checkbox">
+                    <label for="exercise1" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg">
+                  <h4 class="text-lg font-bold text-white mb-2">Exercício 2</h4>
+                  <p class="text-gray-300 mb-3">Desenvolva dois argumentos a favor e dois contra a seguinte tese: "O trabalho remoto deve ser adotado por todas as empresas".</p>
+                  <div class="progress-checkbox-container">
+                    <input type="checkbox" id="exercise2" class="progress-checkbox">
+                    <label for="exercise2" class="text-gray-300">Marcar como concluído</label>
+                  </div>
+                </div>
+              </div>
+            `;
+            break;
+        }
+        
+        // Carregar anotações salvas
+        const notesTextarea = document.getElementById('notes-textarea');
+        const savedNotes = localStorage.getItem(`notes-${subject}-${currentUnit}`);
+        if (savedNotes) {
+          notesTextarea.value = savedNotes;
+        } else {
+          notesTextarea.value = '';
+        }
+      }
+      
+      // Função para atualizar as cores das unidades
+      function updateUnitColors(subject) {
+        const units = document.querySelectorAll('.lesson-circle');
+        const color = subjectColors[subject];
+        
+        units.forEach(unit => {
+          unit.style.backgroundColor = color;
+        });
+      }
+      
+      // Função para carregar a trilha de aprendizagem
+      function loadLearningPath(subject) {
+        // Aqui você pode implementar a lógica para carregar diferentes trilhas conforme a matéria
+        // Por enquanto, apenas atualizamos as cores das unidades
+        updateUnitColors(subject);
+        
+        // Atualizar o título da seção/unidade
+        const subjectNames = {
+          'matematica': 'Matemática',
+          'portugues': 'Português',
+          'geografia': 'Geografia',
+          'historia': 'História',
+          'artes': 'Artes',
+          'redacao': 'Redação'
+        };
+        
+        document.getElementById('current-chapter-title').textContent = subjectNames[subject];
+      }
+      
+      // Função para verificar o status de conexão
+      function checkConnectionStatus() {
+        isOffline = !navigator.onLine;
+        
+        if (isOffline) {
+          handleOffline();
+        }
+      }
+      
+      // Função para lidar com o modo offline
+      function handleOffline() {
+        if (!isOffline) {
+          isOffline = true;
+          offlineStartTime = new Date();
+          
+          // Mostrar modal offline simplificado
+          const simpleOfflineModal = document.getElementById('simple-offline-modal');
+          simpleOfflineModal.classList.add('show');
+          
+          // Configurar botão OK
+          const okBtn = document.getElementById('simple-offline-ok-btn');
+          okBtn.onclick = function() {
+            simpleOfflineModal.classList.remove('show');
+            // Redirecionar para Minha Biblioteca
+            document.getElementById('nav-my-library').click();
+          };
+        }
+      }
+      
+      // Função para lidar com o modo online
+      function handleOnline() {
+        if (isOffline) {
+          isOffline = false;
+          
+          // Esconder modal offline
+          const simpleOfflineModal = document.getElementById('simple-offline-modal');
+          simpleOfflineModal.classList.remove('show');
+          
+          // Mostrar notificação
+          showNotification('Conexão restabelecida!');
+        }
+      }
+      
+      // Função para atualizar o tempo offline
+      function updateOfflineTime() {
+        if (!isOffline) return;
+        
+        const offlineTimeElement = document.getElementById('offline-status-time');
+        
+        setInterval(() => {
+          if (isOffline && offlineStartTime) {
+            const now = new Date();
+            const diff = now - offlineStartTime;
+            
+            // Calcular horas, minutos e segundos
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            // Formatar o tempo
+            const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            offlineTimeElement.textContent = `Perdido há ${formattedTime}`;
+          }
+        }, 1000);
+      }
+      
+      // Função para mostrar notificação
+      function showNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300';
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Remover após 3 segundos
+        setTimeout(() => {
+          notification.style.opacity = '0';
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 300);
+        }, 3000);
+      }
+      
+      // Função para converter hexadecimal para RGB
+      function hexToRgb(hex) {
+        // Remover o # se presente
+        hex = hex.replace(/^#/, '');
+        
+        // Converter para valores decimais
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        
+        return `${r}, ${g}, ${b}`;
+      }
+      
+      // Função debounce para limitar chamadas de função
+      function debounce(func, wait) {
+        let timeout;
+        return function() {
+          const context = this;
+          const args = arguments;
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+      }
+    </script>
+  </body>
+</html>
